@@ -1,0 +1,126 @@
+:root {
+    --gray-color: #848484;
+    --panel-width: 300px;
+    --background-light: rgba(255, 255, 255, 0.9);
+    --background-translucent: rgba(200, 200, 200, 0.7);
+    --transition-time: 0.3s;
+}
+
+/* Reset de marges et de padding pour le body */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+/* Configuration de la carte */
+#map {
+    width: 100%;
+    height: 100vh;
+}
+
+/* Contrôles de zoom (position absolue avec animation) */
+.leaflet-control-zoom {
+    position: absolute !important;
+    left: 40px; /* Position par défaut */
+    transition: left 0.3s ease-in-out; /* Animation fluide */
+}
+
+/* Bandeau gris clair translucide */
+#infoBanner {
+    background-color: var(--background-translucent);
+    color: black;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 10px;
+    text-align: center;
+    font-size: 16px;
+    z-index: 999;
+}
+
+/* Panneau latéral gauche */
+#infoPanelLeft, #infoPanelRight {
+    position: absolute;
+    top: 0;
+    width: var(--panel-width);
+    height: 100vh;
+    background-color: rgba(255, 255, 255, 0.9);
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+    padding: 15px;
+    font-size: 16px;
+    border: 3px solid transparent;
+    border-radius: 8px;
+    transition: all 0.3s ease-in-out;
+    z-index: 1001;
+    overflow-y: auto;
+}
+
+/* Panneau latéral droit */
+#infoPanelRight {
+    right: -300px;
+}
+
+#infoPanelLeft {
+    left: -300px;
+}
+
+
+/* Titre du panneau gauche */
+#panelLeftTitre, #panelRightTitre {
+    padding: 10px;
+    text-align: center;
+    border-radius: 8px;
+    color: #848484;
+}
+
+#infoPanelLeft h1, #infoPanelRight h1 {
+    font-size: 20px;
+    margin: 0 0 10px;
+    color: black;
+}
+
+#infoPanelLeft h2, #infoPanelRight h2 {
+    font-size: 18px;
+    margin: 0 0 10px;
+    color: #848484;
+}
+
+/* Bouton de fermeture du panneau gauche */
+#closePanelLeft, #closePanelRight {
+    background-color: transparent;
+    color: #848484;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 14px;
+}
+
+
+/* Légende */
+#legend {
+    position: absolute;
+    bottom: 10px;
+    left: 40px;
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 10px;
+    border-radius: 8px;
+    z-index: 1100;
+    transition: left 0.3s ease-in-out;
+}
+
+/* Structure de la légende */
+#legend div {
+    display: flex;
+    align-items: center;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    margin-right: 5px;
+}

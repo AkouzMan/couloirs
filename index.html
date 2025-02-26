@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carte des couloirs</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+    <!-- Bandeau d'information -->
+    <div id="infoBanner">
+        <strong>Validité du Bulletin :</strong> <span id="bulletinValidity">Chargement...</span> |
+        <strong>Prochaine émission :</strong> <span id="nextEmission">Chargement...</span>
+    </div>
+
+    <!-- Légende -->
+    <div id="legend">
+        <div>
+            <div class="legend-color" style="background-color: #CCFF66;"></div><span>Faible</span>
+        </div>
+        <div>
+            <div class="legend-color" style="background-color: #FFFF00;"></div><span>Modéré</span>
+        </div>
+        <div>
+            <div class="legend-color" style="background-color: #FF9900;"></div><span>Considérable</span>
+        </div>
+        <div>
+            <div class="legend-color" style="background-color: #FF0000;"></div><span>Élevé</span>
+        </div>
+        <div>
+            <div class="legend-color" style="background-color: #800000;"></div><span>Très élevé</span>
+        </div>
+    </div>
+
+    <!-- Panneau d'information latéral -->
+    <div id="infoPanelLeft">
+        <button id="closePanelLeft">X</button>
+        <h1 id="panelLeftTitre"></h1>
+        <p>
+        <h1>Niveau de danger :</h1> <span id="panelDanger"></span></p>
+        <p>
+        <h1>Expositions :</h1> <span id="panelExpositions"></span></p>
+        <p>
+        <h1>Altitudes :</h1> <span id="panelAltitude"></span></p>
+        <p>
+        <h1>Problème type :</h1> <span id="panelproblemTyp"></span></p>
+        <p><span id="panelSituation"></span></p>
+        <p><span id="panelComment"></span></p>
+        <p><span id="panelMeteo"></span></p>
+    </div>
+
+    <div id="infoPanelRight">
+        <button id="closePanelRight">X</button>
+        <h1 id="panelRightTitre"></h1>
+        <p><strong>Danger Calculé :</strong> <span id="panelRightDanger"></span></p>
+        <p><strong>Pente :</strong> <span id="panelRightPente"></span></p>
+        <p><strong>Exposition :</strong> <span id="panelRightExposition"></span></p>
+        <p><strong>Cotation Ski :</strong> <span id="panelRightCotationSki"></span></p>
+        <p><strong>Exposition Ski :</strong> <span id="panelRightExpositionSki"></span></p>
+        <p><strong>Altitude :</strong> <span id="panelRightAltitude"></span></p>
+        <p><strong>Commentaire :</strong> <span id="panelRightComment"></span></p>
+        <p><strong>Lien :</strong> <a id="panelRightLien" href="#" target="_blank">Topo</a></p>
+    </div>
+    <!-- Carte -->
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script src="js/script.js"></script>
+    <script src="js/node.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
+
+</body>
+
+</html>
