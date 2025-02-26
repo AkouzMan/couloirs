@@ -17,6 +17,7 @@ body {
 #map {
     width: 100%;
     height: 100vh;
+    outline: none;
 }
 
 /* Contrôles de zoom (position absolue avec animation) */
@@ -47,14 +48,28 @@ body {
     width: var(--panel-width);
     height: 100vh;
     background-color: rgba(255, 255, 255, 0.9);
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
     padding: 15px;
     font-size: 16px;
     border: 3px solid transparent;
     border-radius: 8px;
-    transition: all 0.3s ease-in-out;
+    transition: left 0.3s ease-in-out, right 0.3s ease-in-out, transform 0.3s ease-in-out, box-shadow 0.3s ease;
     z-index: 1001;
     overflow-y: auto;
+    box-sizing: border-box;
+    user-select: text;
+}
+
+#infoPanelLeft {
+    transition: left 0.3s ease-in-out;
+}
+
+#infoPanelRight {
+    transition: right 0.3s ease-in-out;
+}
+
+#infoPanelLeft:hover, #infoPanelRight:hover {
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
 }
 
 /* Panneau latéral droit */
@@ -72,7 +87,10 @@ body {
     padding: 10px;
     text-align: center;
     border-radius: 8px;
-    color: #848484;
+    color: #333;
+    margin-bottom: 15px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
 }
 
 #infoPanelLeft h1, #infoPanelRight h1 {
@@ -100,6 +118,10 @@ body {
     font-size: 14px;
 }
 
+#closePanelLeft:hover, #closePanelRight:hover {
+    color: #ff0000;
+    transform: scale(1.2);
+}
 
 /* Légende */
 #legend {
@@ -123,4 +145,163 @@ body {
     width: 20px;
     height: 20px;
     margin-right: 5px;
+}
+
+/* Position de la légende quand le panneau gauche est ouvert */
+#loginContainer {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column; /* Organiser les éléments verticalement */
+    align-items: center;
+    transition: right 0.3s ease-in-out;
+}
+
+/* Position du bouton quand le panneau droit est ouvert */
+body.panel-right-open #loginContainer {
+    right: 340px; /* Ajustez cette valeur selon la largeur de votre panneau droit */
+}
+
+/* Style pour un bouton plus discret */
+#loginBtn {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    background-color: rgba(140, 140, 140, 0.7);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+    position: fixed;
+    z-index: 1000;
+    transition: right 0.3s ease-in-out;
+    margin-bottom: 3px; /* Espace entre le bouton et le texte de statut */
+}
+
+#loginBtn:hover {
+    opacity: 1;
+    background-color: rgba(74, 74, 74, 0.9);
+}
+
+#userStatus {
+    color: #333;
+    font-size: 0.7rem; /* Texte plus petit */
+    text-align: center; /* Centrer le texte */
+    margin-top: 32px; /* Espace entre le bouton et le texte */
+    background-color: rgba(255, 255, 255, 0.7); /* Fond semi-transparent */
+    padding: 2px 4px; /* Petit padding */
+    border-radius: 3px; /* Coins arrondis */
+    max-width: 200px; /* Limiter la largeur */
+    white-space: nowrap; /* Empêcher le retour à la ligne */
+    overflow: hidden; /* Cacher le débordement */
+    text-overflow: ellipsis; /* Ajouter des points de suspension si trop long */
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 300px;
+    border-radius: 5px;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.error-message {
+    color: red;
+    margin-top: 10px;
+}
+
+/* Style pour masquer les éléments lorsque non connecté */
+.auth-required {
+    display: none;
+}
+
+/* Améliorer la visibilité du curseur sur les éléments cliquables */
+.leaflet-interactive {
+    cursor: pointer !important;
+}
+
+/* Effet lors de l'ouverture et fermeture des panneaux */
+@keyframes panelPulse {
+    0% { box-shadow: 0 0 0 rgba(0,0,0,0.2); }
+    50% { box-shadow: 0 0 10px rgba(0,0,0,0.4); }
+    100% { box-shadow: 0 0 0 rgba(0,0,0,0.2); }
+}
+
+#infoPanelLeft[data-is-open="true"], 
+#infoPanelRight[data-is-open="true"] {
+    animation: panelPulse 1s ease-in-out;
+}
+
+/* Style pour les popups */
+.leaflet-popup-content {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.leaflet-popup-content-wrapper {
+    border-radius: 8px;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+    transition: all 0.3s;
+}
+
+.leaflet-popup-tip {
+    transition: all 0.3s;
+}
+
+/* Indication visuelle pour les éléments interactifs de la carte */
+.leaflet-interactive:hover {
+    stroke-width: 3px !important;
+    stroke-opacity: 1 !important;
+    cursor: pointer !important;
+}
+
+/* Indiquer visuellement l'état d'interaction */
+body.interacting #map {
+    cursor: grabbing;
 }
