@@ -1,5 +1,3 @@
-
-
 // Fonction pour obtenir le niveau de danger sous forme numérique
 function getNumDangerLevel(dangerLevel) {
     const dangerLevels = {
@@ -167,3 +165,75 @@ function hashPassword(password) {
     return hash;
 });
 }
+
+// Système de journalisation amélioré pour le débogage
+const Logger = {
+    levels: {
+        DEBUG: 0,
+        INFO: 1,
+        WARN: 2,
+        ERROR: 3
+    },
+    
+    currentLevel: 0, // DEBUG par défaut
+    
+    setLevel: function(level) {
+        if (typeof level === 'string') {
+            level = this.levels[level.toUpperCase()] || 0;
+        }
+        this.currentLevel = level;
+    },
+    
+    debug: function(message, ...args) {
+        if (this.currentLevel <= this.levels.DEBUG) {
+            console.debug(`[DEBUG] ${message}`, ...args);
+        }
+    },
+    
+    info: function(message, ...args) {
+        if (this.currentLevel <= this.levels.INFO) {
+            console.info(`[INFO] ${message}`, ...args);
+        }
+    },
+    
+    warn: function(message, ...args) {
+        if (this.currentLevel <= this.levels.WARN) {
+            console.warn(`[WARN] ${message}`, ...args);
+        }
+    },
+    
+    error: function(message, ...args) {
+        if (this.currentLevel <= this.levels.ERROR) {
+            console.error(`[ERROR] ${message}`, ...args);
+        }
+    },
+    
+    // Journalisation des erreurs de DOM
+    logElementCheck: function(id, element) {
+        if (!element) {
+            this.error(`Élément avec l'ID '${id}' non trouvé dans le DOM`);
+            return false;
+        }
+        this.debug(`Élément avec l'ID '${id}' trouvé dans le DOM`);
+        return true;
+    }
+};
+
+// Exposer le logger globalement
+window.Logger = Logger;
+
+// Fonction pour vérifier si un champ du DOM existe et le valoriser
+function safeSetValue(id, value) {
+    const element = document.getElementById(id);
+    if (Logger.logElementCheck(id, element)) {
+        element.value = value || '';
+        return true;
+    }
+    return false;
+}
+
+// Exposer la fonction
+window.safeSetValue = safeSetValue;
+
+// Fonction pour réinitialiser la base de données (utilisable depuis la console)
+console.info("Pour réinitialiser la base de données, utilisez window.resetAndReloadDatabase()");

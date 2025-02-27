@@ -218,6 +218,8 @@ body.panel-right-open #loginContainer {
     border: 1px solid #888;
     width: 300px;
     border-radius: 5px;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .close {
@@ -304,4 +306,417 @@ body.panel-right-open #loginContainer {
 /* Indiquer visuellement l'état d'interaction */
 body.interacting #map {
     cursor: grabbing;
+}
+
+/* Styles pour le bouton de suppression */
+.danger-btn {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 15px;
+    transition: background-color 0.3s ease;
+}
+
+.danger-btn:hover {
+    background-color: #c0392b;
+}
+
+.panel-actions {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #ddd;
+    text-align: center;
+}
+
+/* Styles améliorés pour la modale de suppression */
+.modal-content .form-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+    gap: 10px; /* Espace entre les boutons */
+}
+
+.modal-content .form-actions button {
+    flex: 1; /* Faire en sorte que les boutons prennent une largeur égale */
+    padding: 10px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    text-align: center;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    height: 40px; /* Hauteur fixe */
+    line-height: 1;
+}
+
+#cancelDeleteBtn {
+    background-color: #95a5a6;
+    color: white;
+}
+
+#cancelDeleteBtn:hover {
+    background-color: #7f8c8d;
+    transform: scale(1.05);
+}
+
+#confirmDeleteBtn {
+    background-color: #e74c3c;
+    color: white;
+}
+
+#confirmDeleteBtn:hover {
+    background-color: #c0392b;
+    transform: scale(1.05);
+}
+
+/* Amélioration générale des formulaires dans les modales */
+.modal-content form {
+    margin-top: 15px;
+}
+
+.modal-content .form-group {
+    margin-bottom: 20px;
+}
+
+.modal-content .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #333;
+}
+
+.modal-content .form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease;
+}
+
+.modal-content .form-group input:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 3px rgba(52, 152, 219, 0.5);
+}
+
+.error-message {
+    color: #e74c3c;
+    margin-top: 10px;
+    font-size: 14px;
+    text-align: center;
+}
+
+/* Meilleure apparence pour la modale */
+.modal-content {
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 25px;
+    border: 1px solid #e0e0e0;
+    width: 400px;
+    max-width: 90%;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.modal-content h2 {
+    margin-top: 5px;
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 22px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+}
+
+.modal-content p {
+    margin-bottom: 15px;
+    color: #555;
+    line-height: 1.5;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    line-height: 0.8;
+}
+
+.close:hover,
+.close:focus {
+    color: #e74c3c;
+}
+
+/* Style pour le bouton d'ajout de couloir */
+#addCouloirBtn {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    background-color: rgba(52, 152, 219, 0.85);
+    border: 1px solid rgba(41, 128, 185, 0.3);
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    opacity: 0.9;
+    transition: all 0.2s ease;
+    position: fixed;
+    z-index: 1000;
+    top: 40px;
+    right: 10px;
+    margin-top: 5px;
+}
+
+#addCouloirBtn:hover {
+    background-color: rgba(41, 128, 185, 1);
+    opacity: 1;
+    transform: scale(1.05);
+}
+
+/* Style pour le formulaire d'ajout de couloir */
+#addCouloirModal .modal-content {
+    width: 500px;
+    max-width: 95%;
+}
+
+.form-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.form-group.half {
+    flex: 1;
+}
+
+textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+    resize: vertical;
+    font-family: inherit;
+}
+
+select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    font-size: 14px;
+    height: 38px; /* Assurer une taille cohérente avec les autres inputs */
+}
+
+.primary-btn {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.primary-btn:hover {
+    background-color: #2980b9;
+    transform: scale(1.05);
+}
+
+/* Style pour l'affichage de l'auteur du couloir */
+.couloir-author {
+    font-size: 0.9em;
+    color: #666;
+    border-top: 1px dotted #ddd;
+    margin-top: 20px;
+    padding-top: 10px;
+    text-align: left;
+    padding-left: 5px;
+}
+
+/* Style pour les notes explicatives sous les labels */
+.input-note {
+    font-size: 0.8em;
+    font-weight: normal;
+    color: #777;
+    font-style: italic;
+}
+
+/* Styles pour le bouton d'édition */
+.edit-btn {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.edit-btn:hover {
+    background-color: #2980b9;
+}
+
+/* Style pour le groupe de boutons */
+.button-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.button-group button {
+    flex: 1;
+    max-width: 45%;
+    height: 38px; /* Hauteur fixe pour tous les boutons */
+    line-height: 1;
+}
+
+/* Style pour le système de notifications */
+.notification {
+    position: fixed;
+    top: 70px;
+    right: 15px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 9999;
+    max-width: 350px;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+.notification.success {
+    background-color: #d4edda;
+    color: #155724;
+    border-left: 4px solid #28a745;
+}
+
+.notification.warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border-left: 4px solid #ffc107;
+}
+
+.notification.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-left: 4px solid #dc3545;
+}
+
+.notification p {
+    margin: 0;
+    font-size: 14px;
+}
+
+.notification.fadeOut {
+    opacity: 0;
+}
+
+/* Amélioration du style des forms pour résoudre le problème d'affichage */
+#addCouloirModal .form-group,
+#editCouloirModal .form-group {
+    clear: both;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+/* Correction des problèmes avec les formulaires */
+.modal-content .form-row {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping on small screens */
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 10px;
+    clear: both;
+}
+
+.modal-content .form-group.half {
+    flex: 1;
+    min-width: 180px; /* Ensure minimum width */
+}
+
+.modal-content .form-group {
+    margin-bottom: 15px;
+    width: 100%;
+    clear: both;
+}
+
+/* Assurer que les champs sont bien dimensionnés */
+.modal-content input,
+.modal-content select,
+.modal-content textarea {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Style pour le commentaire de danger dans le panneau droit */
+.danger-comment {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: -10px;
+    margin-bottom: 15px;
+    padding-left: 5px;
+    text-align: left;
+}
+
+/* Corrections pour l'alignement vertical des champs d'altitude */
+.form-row.altitude-row {
+    align-items: flex-end; /* Aligner le bas des éléments */
+}
+
+.form-group.half-with-note {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.half-with-note label {
+    margin-bottom: 0;
+}
+
+.form-group.half-with-note .input-note {
+    margin-bottom: 8px;
+}
+
+.form-group.half-with-note input,
+.form-group.half input {
+    height: 38px; /* Hauteur fixe pour tous les inputs */
+    box-sizing: border-box;
+}
+
+/* Style pour assurer l'uniformité des boutons */
+.uniform-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+}
+
+.uniform-buttons button {
+    flex: 1;
+    height: 40px; /* Hauteur fixe pour tous les boutons */
+    overflow: hidden;
+    white-space: normal; /* Permettre le retour à la ligne du texte si nécessaire */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.2;
+    padding: 5px 10px;
+}
+
+/* Ajustement pour les boutons de suppression */
+#confirmDeleteBtn, #cancelDeleteBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
 }

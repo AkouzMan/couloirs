@@ -4,54 +4,164 @@ var regions = []; // Variable globale pour stocker les régions (polygones de da
 var markersLayer; // Couche pour stocker tous les marqueurs
 var currentPopup = null; // Pour suivre le popup actuellement ouvert
 var currentRegion = null; // Pour suivre la région actuellement sélectionnée
+var mapInitialized = false; // Flag pour suivre si la carte est initialisée
+var currentCouloirId = null; // Pour stocker l'ID du couloir actuellement affiché
 
+// Écouter le chargement du DOM, mais avec une vérification d'initialisation
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialiser la carte
-    map = L.map('map').setView([46.8182, 8.2275], 8);
-    window.map = map; // Rendre la carte accessible globalement
+    // Vérifier si la carte est déjà initialisée
+    if (!window.mapInitialized) {
+        window.mapInitialized = true;
+        initializeApplication();
+    }
+});
+
+function initializeApplication() {
+    console.log("Initialisation de l'application...");
     
-    L.tileLayer('https://wmts20.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg', {
-        maxZoom: 19,
-        attribution: '© <a href="https://www.swisstopo.admin.ch/">swisstopo</a>'
-    }).addTo(map);
+    // Initialisation de la carte
+    initMap();
     
-    // Initialiser la couche de marqueurs (vide pour l'instant)
-    markersLayer = L.layerGroup();
-    window.markersLayer = markersLayer;
+    // Chargement des données après l'initialisation de la carte
+    loadAvailableData();
+}
+
+// Initialisation de la carte séparée
+function initMap() {
+    // Vérification pour éviter la double initialisation
+    if (window.map) {
+        console.log("La carte est déjà initialisée, aucune action nécessaire");
+        return;
+    }
     
-    // Initialiser les couches qui nécessitent une authentification
-    window.authLayers = [];
-    
-    // Charger les données du bulletin d'avalanche (accessible sans authentification)
-    fetchAvalancheData().then(() => {
-        console.log("Données avalanche chargées.");
+    console.log("Initialisation de la carte Leaflet");
+    try {
+        map = L.map('map').setView([46.8182, 8.2275], 8);
+        window.map = map; // Rendre la carte accessible globalement
+        
+        L.tileLayer('https://wmts20.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg', {
+            maxZoom: 19,
+            attribution: '© <a href="https://www.swisstopo.admin.ch/">swisstopo</a>'
+        }).addTo(map);
+        
+        // Initialiser la couche de marqueurs (vide pour l'instant)
+        markersLayer = L.layerGroup();
+        window.markersLayer = markersLayer;
+        
+        // Initialiser les couches qui nécessitent une authentification
+        window.authLayers = [];
+        
+        // Configuration des gestionnaires d'événements
+        setupMapEventHandlers();
+        
+        console.log("Carte initialisée avec succès");
+    } catch (error) {
+        console.error("Erreur lors de l'initialisation de la carte:", error);
+    }
+}
+
+// Fonction pour charger les données disponibles
+async function loadAvailableData() {
+    try {
+        // Charger les données du bulletin d'avalanche
+        await fetchAvalancheData();
+        console.log("Données avalanche chargées");
         
         // Signaler que la carte est initialisée
         window.appState = window.appState || {};
         window.appState.mapInitialized = true;
         document.dispatchEvent(new Event('mapInitialized'));
         
-        // Charger les données CSV (qui nécessitent une authentification)
-        fetchAndDisplayCSV().then(() => {
-            console.log("Données CSV chargées et affichées !");
-            
-            // Vérifier l'état d'authentification pour mettre à jour l'affichage
-            if (window.authModule && typeof window.authModule.isAuthenticated === 'function') {
-                updateMapFeatures(window.authModule.isAuthenticated());
-            }
-        }).catch((error) => {
-            console.error("Erreur lors du chargement du CSV :", error);
-        });
-    }).catch((error) => {
-        console.error("Erreur lors du chargement des données d'avalanche :", error);
+        // Initialiser la base de données et charger les points
+        try {
+            await initDatabase();
+            await fetchAndDisplayPoints();
+            console.log("Données de la base de données chargées et affichées");
+        } catch (dbError) {
+            console.error("Erreur avec la base de données:", dbError);
+        }
+        
+        // Vérifier l'authentification pour l'affichage en utilisant la fonction correcte
+        if (window.authModule && typeof window.authModule.isAuthenticated === 'function') {
+            updateMapFeatures(window.authModule.isAuthenticated());
+        }
+    } catch (error) {
+        console.error("Erreur lors du chargement des données:", error);
+    }
+}
+
+// Exposer ces fonctions globalement
+window.initMap = initMap;
+window.loadData = loadAvailableData;
+
+// Configuration des gestionnaires d'événements de la carte
+function setupMapEventHandlers() {
+    if (!map) {
+        console.warn("Impossible de configurer les gestionnaires d'événements: carte non initialisée");
+        return;
+    }
+    
+    console.log("Configuration des gestionnaires d'événements de la carte");
+    
+    // Supprimer les gestionnaires existants pour éviter les doublons
+    map.off('click');
+    
+    // Ajouter un gestionnaire d'événements directement sur l'élément DOM de la carte
+    const mapContainer = map.getContainer();
+    
+    // Définir la fonction de gestionnaire de clic
+    function mapClickHandler(e) {
+        // Ne pas traiter les clics sur les éléments interactifs
+        if (e.target.classList && (
+            e.target.classList.contains('leaflet-interactive') ||
+            e.target.closest('.leaflet-interactive') ||
+            e.target.closest('.leaflet-popup-content-wrapper') ||
+            e.target.closest('.leaflet-popup')
+        )) {
+            console.log("Clic sur élément interactif, ignoré");
+            return;
+        }
+        
+        // Si le clic est sur le fond de carte, fermer les panneaux
+        console.log("Clic sur le fond de carte détecté, fermeture des panneaux");
+        closeAllPanelsAndPopups();
+    }
+    
+    // Supprimer d'abord tout gestionnaire d'événement existant pour éviter les doublons
+    if (mapContainer._clickHandler) {
+        mapContainer.removeEventListener('click', mapContainer._clickHandler);
+    }
+    
+    // Stocker la référence au gestionnaire pour pouvoir la supprimer plus tard
+    mapContainer._clickHandler = mapClickHandler;
+    mapContainer.addEventListener('click', mapClickHandler);
+    
+    // Ajouter également le gestionnaire standard Leaflet
+    map.on('click', function(e) {
+        // Vérifier si le clic n'est pas sur un élément interactif
+        if (!e.originalEvent.target.closest('.leaflet-interactive') &&
+            !e.originalEvent.target.closest('.leaflet-popup')) {
+            console.log("Leaflet map click detected, closing panels");
+            closeAllPanelsAndPopups();
+        }
     });
-});
+    
+    console.log("Gestionnaires d'événements de la carte configurés");
+}
 
 // Fonction pour récupérer les données d'avalanche
 async function fetchAvalancheData() {
     const url = `https://aws.slf.ch/api/bulletin/caaml/fr/geojson`;
 
     try {
+        // Vider d'abord les régions existantes pour éviter les doublons
+        regions.forEach(region => {
+            if (region.region && map.hasLayer(region.region)) {
+                map.removeLayer(region.region);
+            }
+        });
+        regions = []; // Réinitialiser le tableau des régions
+
         const response = await fetch(url);
         if (!response.ok) throw new Error('Erreur lors de la récupération des données');
 
@@ -83,7 +193,7 @@ async function fetchAvalancheData() {
             // Fill color
             const fillColor = properties.fill || '#FFFFFF';
 
-            // Create the region (GeoJSON feature)
+            // Create the region (GeoJSON feature) with specific opacity
             let region = L.geoJSON(geometry, {
                 style: {
                     fillColor: fillColor,
@@ -217,8 +327,11 @@ var closePanelRight = document.getElementById('closePanelRight');
 var closePanelLeft = document.getElementById('closePanelLeft');
 
 // Fonction d'affichage du panneau droit
-function showRightPanel(name, lat, lon, pointExposition, altitudeMax, altitudeMin, pente, cotationSki, expositionSki, commentaire, lien, dangerCalc, dangerSub, pointColor) {
+function showRightPanel(couloirId, name, lat, lon, pointExposition, altitudeMax, altitudeMin, pente, cotationSki, expositionSki, commentaire, lien, dangerCalc, dangerSub, pointColor, user) {
     if (!infoPanelRight) return;
+    
+    // Stocker l'ID du couloir actuel
+    currentCouloirId = couloirId;
     
     const loginBtn = document.getElementById('loginBtn');
     
@@ -227,31 +340,80 @@ function showRightPanel(name, lat, lon, pointExposition, altitudeMax, altitudeMi
         ? `À ${altitudeMax}m`
         : `De ${altitudeMax}m à ${altitudeMin}m`;
 
-    // Mise à jour du contenu du panneau droit
-    document.getElementById('panelRightTitre').textContent = name;
-    document.getElementById('panelRightDanger').textContent = `${dangerCalc.danger}${dangerSub}`;
-    document.getElementById('panelRightPente').textContent = pente;
-    document.getElementById('panelRightExposition').textContent = pointExposition;
-    document.getElementById('panelRightCotationSki').textContent = cotationSki;
-    document.getElementById('panelRightExpositionSki').textContent = expositionSki;
-    document.getElementById('panelRightAltitude').textContent = altitude;
-    document.getElementById('panelRightComment').textContent = commentaire;
-    document.getElementById('panelRightLien').href = lien;
-
-    // Affichage du panneau avec animation
-    infoPanelRight.style.transition = 'right 0.3s ease-in-out';
-    infoPanelRight.style.right = '0';
-    infoPanelRight.style.borderColor = pointColor;
-    document.getElementById('panelRightTitre').style.backgroundColor = pointColor;
-    
-    // Repositionner le bouton login quand le panneau est ouvert
-    if (loginBtn) {
-        loginBtn.style.transition = 'right 0.3s ease-in-out';
-        loginBtn.style.right = '310px';
+    try {
+        // Mise à jour du contenu du panneau droit - avec vérification de l'existence des éléments
+        const elementsToUpdate = [
+            { id: 'panelRightTitre', value: name },
+            { id: 'panelRightDanger', value: `${dangerCalc.danger}${dangerSub}` },
+            { id: 'panelRightPente', value: pente },
+            { id: 'panelRightExposition', value: pointExposition },
+            { id: 'panelRightCotationSki', value: cotationSki },
+            { id: 'panelRightExpositionSki', value: expositionSki },
+            { id: 'panelRightAltitude', value: altitude },
+            { id: 'panelRightComment', value: commentaire },
+            { id: 'panelRightAuthor', value: user || 'Inconnu' }
+        ];
+        
+        // Mise à jour sécurisée des éléments textuels
+        elementsToUpdate.forEach(item => {
+            const element = document.getElementById(item.id);
+            if (element) {
+                element.textContent = item.value;
+            } else {
+                console.warn(`Élément ${item.id} non trouvé dans le DOM`);
+            }
+        });
+        
+        // Mise à jour spécifique pour le commentaire de danger
+        const dangerCommentElement = document.getElementById('panelRightDangerComment');
+        if (dangerCommentElement) {
+            dangerCommentElement.textContent = dangerCalc.commentaire || '';
+        }
+        
+        // Mise à jour du lien (href au lieu de textContent)
+        const lienElement = document.getElementById('panelRightLien');
+        if (lienElement) {
+            lienElement.href = lien;
+        }
+        
+        // Mise à jour des styles
+        if (document.getElementById('panelRightTitre')) {
+            document.getElementById('panelRightTitre').style.backgroundColor = pointColor;
+        }
+        
+        // Affichage du panneau avec animation
+        infoPanelRight.style.transition = 'right 0.3s ease-in-out';
+        infoPanelRight.style.right = '0';
+        infoPanelRight.style.borderColor = pointColor;
+        
+        // Repositionner le bouton login quand le panneau est ouvert
+        if (loginBtn) {
+            loginBtn.style.transition = 'right 0.3s ease-in-out';
+            loginBtn.style.right = '310px';
+        }
+        
+        // Signal que le panneau est ouvert
+        infoPanelRight.dataset.isOpen = 'true';
+        
+        // Stocker les données du couloir actuel pour l'édition
+        window.currentCouloirData = {
+            id: couloirId,
+            nom: name,
+            latitude: lat,
+            longitude: lon,
+            exposition: pointExposition,
+            altitude_max: altitudeMax,
+            altitude_min: altitudeMin,
+            pente: pente,
+            cotation_ski: cotationSki,
+            exposition_ski: expositionSki,
+            commentaire: commentaire,
+            lien: lien,
+            user: user
+        };
+    } catch (error) {
+        console.error("Erreur lors de l'affichage du panneau droit:", error);
     }
-    
-    // Signal que le panneau est ouvert
-    infoPanelRight.dataset.isOpen = 'true';
 }
 
 // Fonction pour masquer le panneau droit
@@ -340,8 +502,6 @@ if (closePanelLeft) {
     });
 }
 
-// Remplacer complètement la gestion des clics sur la carte par ce qui suit :
-
 // Fonction pour vérifier si un élément est interactif
 function isInteractiveElement(element) {
     if (!element) return false;
@@ -356,156 +516,48 @@ function isInteractiveElement(element) {
     return false;
 }
 
-// Gestionnaire de clics sur la carte
-if (map) {
-    // Supprimer tous les gestionnaires d'événements existants
-    map.off('click');
-    
-    // Ajouter un gestionnaire d'événements directement sur l'élément DOM de la carte
-    const mapContainer = map.getContainer();
-    
-    // Supprimer d'abord tout gestionnaire d'événement existant pour éviter les doublons
-    mapContainer.removeEventListener('click', mapClickHandler);
-    
-    function mapClickHandler(e) {
-        // Ne pas traiter les clics sur les éléments interactifs
-        if (e.target.classList && (
-            e.target.classList.contains('leaflet-interactive') ||
-            e.target.closest('.leaflet-interactive') ||
-            e.target.closest('.leaflet-popup-content-wrapper') ||
-            e.target.closest('.leaflet-popup')
-        )) {
-            console.log("Clic sur élément interactif, ignoré");
-            return;
-        }
-        
-        // Si le clic est sur le fond de carte, fermer les panneaux
-        console.log("Clic sur le fond de carte détecté, fermeture des panneaux");
-        closeAllPanelsAndPopups();
-    }
-    
-    mapContainer.addEventListener('click', mapClickHandler);
-    
-    // Garder aussi le gestionnaire standard pour être sûr
-    map.on('click', function(e) {
-        // Vérifier si le clic n'est pas sur un élément interactif
-        if (!e.originalEvent.target.closest('.leaflet-interactive') &&
-            !e.originalEvent.target.closest('.leaflet-popup')) {
-            console.log("Leaflet map click detected, closing panels");
-            closeAllPanelsAndPopups();
-        }
-    });
-}
-
-// Assurer que closeAllPanelsAndPopups() fonctionne correctement
-function closeAllPanelsAndPopups() {
-    console.log("closeAllPanelsAndPopups appelé");
-    
-    // Fermer les popups
-    if (map) {
-        map.closePopup();
-    }
-    
-    if (currentPopup) {
-        currentPopup = null;
-    }
-    
-    // Masquer les panneaux
-    hideLeftPanel();
-    hideRightPanel();
-    
-    // Réinitialiser l'opacité de la région actuelle si elle existe
-    if (currentRegion) {
-        currentRegion.setStyle({
-            fillOpacity: 0.4  // Remettre l'opacité initiale
-        });
-        currentRegion = null;
-    }
-}
-
-// Remplacer ou modifier le gestionnaire d'événements pour les clics sur le document
-
-// Conserver l'écouteur sur le body pour les clics en dehors des éléments spécifiques
-document.body.addEventListener('click', function(e) {
-    // Si le clic est sur la carte (e.target.closest('#map') est vrai) mais pas sur un élément interactif,
-    // alors fermer les panneaux
-    if (e.target.closest('#map') && !isInteractiveElement(e.target)) {
-        console.log("Clic sur la carte détecté (dans le gestionnaire body), fermeture des panneaux");
-        closeAllPanelsAndPopups();
-    }
-    
-    // Si le clic est en dehors de la carte et des panneaux, fermer les panneaux également
-    if (!e.target.closest('#map') && 
-        !e.target.closest('#infoPanelLeft') && 
-        !e.target.closest('#infoPanelRight') &&
-        !e.target.closest('.modal') &&
-        !e.target.closest('#loginBtn')) {
-        console.log("Clic en dehors de la carte et des panneaux détecté, fermeture des panneaux");
-        closeAllPanelsAndPopups();
-    }
-});
-
-// Fonction pour mettre à jour les fonctionnalités de la carte en fonction de l'état d'authentification
+// Fonction pour mettre à jour les caractéristiques de la carte en fonction de l'authentification
 function updateMapFeatures(isAuthenticated) {
-    console.log("updateMapFeatures appelé avec isAuthenticated =", isAuthenticated);
+    console.log("Mise à jour des couches de la carte - Authentifié:", isAuthenticated);
     
-    // Masquer/afficher les points sur la carte
-    if (window.markersLayer) {
-        if (isAuthenticated) {
-            window.map.addLayer(window.markersLayer);
-        } else {
-            window.map.removeLayer(window.markersLayer);
-        }
+    if (!window.map) {
+        console.warn("La carte n'est pas initialisée, impossible de mettre à jour les caractéristiques");
+        return;
     }
     
-    // Mettre à jour l'affichage des éléments réservés aux utilisateurs authentifiés
+    // Gérer l'affichage des couches qui nécessitent une authentification
+    if (window.authLayers && Array.isArray(window.authLayers)) {
+        window.authLayers.forEach(layer => {
+            if (isAuthenticated) {
+                // Ajouter la couche si l'utilisateur est authentifié et si elle n'est pas déjà présente
+                if (!window.map.hasLayer(layer)) {
+                    window.map.addLayer(layer);
+                    console.log("Couche ajoutée à la carte");
+                }
+            } else {
+                // Retirer la couche si l'utilisateur n'est pas authentifié
+                if (window.map.hasLayer(layer)) {
+                    window.map.removeLayer(layer);
+                    console.log("Couche retirée de la carte");
+                }
+            }
+        });
+    }
+    
+    // Mettre à jour l'interface utilisateur basée sur l'authentification
     document.querySelectorAll('.auth-required').forEach(el => {
         el.style.display = isAuthenticated ? 'block' : 'none';
     });
-    
-    // Masquer le panneau droit si l'utilisateur se déconnecte
-    if (!isAuthenticated && infoPanelRight) {
-        hideRightPanel();
-    }
 }
 
-// Fonction pour mettre à jour la visibilité des couches de carte basée sur l'authentification
-window.updateMapLayersVisibility = function(isAuthenticated) {
-    console.log("updateMapLayersVisibility appelé avec isAuthenticated =", isAuthenticated);
-    updateMapFeatures(isAuthenticated);
-};
+// Exposer la fonction pour qu'elle soit accessible depuis d'autres modules
+window.updateMapLayersVisibility = updateMapFeatures;
 
-// Écouter les changements d'état d'authentification
-document.addEventListener('authStateChanged', function(event) {
-    const isAuthenticated = event.detail.isAuthenticated;
-    updateMapFeatures(isAuthenticated);
-});
-
-// Fonction pour lire le CSV
-async function loadCSV() {
+// Remplacer la fonction fetchAndDisplayCSV par loadCouloirsFromDB
+async function fetchAndDisplayPoints() {
     try {
-        const results = await new Promise((resolve, reject) => {
-            Papa.parse('couloirs.csv', {
-                download: true,
-                header: true,
-                dynamicTyping: true,
-                complete: resolve,
-                error: reject
-            });
-        });
-        
-        return results;
-    } catch (error) {
-        console.error("Erreur lors de la lecture du fichier CSV:", error);
-        throw error;
-    }
-}
-
-// Fonction pour charger et afficher les points du CSV
-async function fetchAndDisplayCSV() {
-    try {
-        const results = await loadCSV();
-        const rows = results.data;
+        // Récupérer les couloirs depuis la base de données au lieu du CSV
+        const couloirs = await getAllCouloirs();
         
         // Créer une nouvelle couche pour les marqueurs
         if (!window.markersLayer) {
@@ -516,23 +568,25 @@ async function fetchAndDisplayCSV() {
         window.markersLayer.clearLayers();
         
         // Ajouter les points à la couche
-        rows.forEach(row => {
-            if (!row.latitude || !row.longitude) return;
+        couloirs.forEach(couloir => {
+            if (!couloir.latitude || !couloir.longitude) return;
 
             const {
-                name = '',
+                id: couloirId,  // Récupérer l'ID du couloir
+                nom: name = '',
                 pente = '',
                 cotation_ski: cotationSki = '',
                 exposition_ski: expositionSki = '',
                 commentaire = '',
                 lien = '',
-            } = row;
+                user = 'Inconnu'
+            } = couloir;
 
-            const lat = parseFloat(row.latitude);
-            const lon = parseFloat(row.longitude);
-            const altitudeMax = parseInt(row.altitude_max, 10) || '';
-            const altitudeMin = parseInt(row.altitude_min, 10) || '';
-            const pointExposition = row.exposition?.trim() || '';
+            const lat = parseFloat(couloir.latitude);
+            const lon = parseFloat(couloir.longitude);
+            const altitudeMax = parseInt(couloir.altitude_max, 10) || '';
+            const altitudeMin = parseInt(couloir.altitude_min, 10) || '';
+            const pointExposition = couloir.exposition?.trim() || '';
 
             let dangerCalc = {
                 danger: "NaN",
@@ -566,9 +620,9 @@ async function fetchAndDisplayCSV() {
                     L.DomEvent.stopPropagation(e);
                     
                     // Afficher le panneau droit avec les informations du point
-                    showRightPanel(name, lat, lon, pointExposition, altitudeMax, altitudeMin, 
+                    showRightPanel(couloirId, name, lat, lon, pointExposition, altitudeMax, altitudeMin, 
                                    pente, cotationSki, expositionSki, commentaire, lien,
-                                   dangerCalc, dangerSub, pointColor);
+                                   dangerCalc, dangerSub, pointColor, user);
                     
                     // Gérer l'affichage des informations de la région
                     if (regionNumber !== 'Hors bulletin' && !isNaN(regionNumber)) {
@@ -604,7 +658,6 @@ async function fetchAndDisplayCSV() {
                         // Créer et afficher un popup pour la région contenant ce point
                         const regionBounds = L.geoJSON(regionData.geometry).getBounds();
                         const regionCenter = regionBounds.getCenter();
-                        
                         let popupContent = `
                             <div style="border: 3px solid ${regionData.fillColor}; padding: 10px; border-radius: 6px;">
                                 <b>Niveau de danger :</b> ${getNumDangerLevel(regionData.dangerLevel)}${getSubDangerLevel(regionData.dangerSub)}<br>
@@ -684,9 +737,9 @@ async function fetchAndDisplayCSV() {
             }
         }
         
-        return rows;
+        return couloirs;
     } catch (error) {
-        console.error("Erreur lors du chargement et de l'affichage du CSV :", error);
+        console.error("Erreur lors du chargement et de l'affichage des points :", error);
         throw error;
     }
 }
@@ -698,52 +751,480 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-/* ...existing code... */
-
-// Gestionnaire pour le panneau droit
+// Gestionnaire pour la suppression d'un couloir
 document.addEventListener('DOMContentLoaded', function() {
-    const infoPanelRight = document.getElementById('infoPanelRight');
-    const closePanelRight = document.getElementById('closePanelRight');
-    const loginBtn = document.getElementById('loginBtn');
+    const deleteModal = document.getElementById('deleteModal');
+    const deleteCouloirBtn = document.getElementById('deleteCouloirBtn');
+    const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+    const closeDeleteModalBtn = deleteModal?.querySelector('.close');
+    const deleteForm = document.getElementById('deleteForm');
+    const deleteError = document.getElementById('deleteError');
     
-    // Fonction pour ouvrir le panneau droit
-    function openRightPanel() {
-        infoPanelRight.style.right = '0';
-        
-        // Repositionner le bouton login quand le panneau est ouvert
-        if (loginBtn) {
-            loginBtn.style.transition = 'right 0.3s ease-in-out';
-            loginBtn.style.right = '310px';
+    // Gestionnaire pour l'édition d'un couloir
+    const editCouloirBtn = document.getElementById('editCouloirBtn');
+    const editCouloirModal = document.getElementById('editCouloirModal');
+    const cancelEditCouloirBtn = document.getElementById('cancelEditCouloirBtn');
+    const closeEditModalBtn = editCouloirModal?.querySelector('.close');
+    const editCouloirForm = document.getElementById('editCouloirForm');
+    const editCouloirError = document.getElementById('editCouloirError');
+    
+    // Fonction pour ouvrir la modale de suppression
+    if (deleteCouloirBtn) {
+        deleteCouloirBtn.addEventListener('click', function() {
+            if (currentCouloirId === null) {
+                console.error("Impossible de supprimer: aucun couloir sélectionné");
+                return;
+            }
+            
+            // Vérifier si l'utilisateur est authentifié
+            if (!window.authModule || !window.authModule.isAuthenticated()) {
+                alert("Vous devez être connecté pour supprimer un couloir.");
+                return;
+            }
+            
+            // Réinitialiser le formulaire et les erreurs
+            if (deleteForm) deleteForm.reset();
+            if (deleteError) deleteError.textContent = '';
+            
+            // Afficher la modale
+            if (deleteModal) deleteModal.style.display = 'block';
+        });
+    }
+    
+    // Fonction pour ouvrir la modale d'édition
+    if (editCouloirBtn) {
+        editCouloirBtn.addEventListener('click', function() {
+            if (!window.currentCouloirData) {
+                console.error("Impossible de modifier: aucun couloir sélectionné ou données manquantes");
+                return;
+            }
+            
+            // Vérifier si l'utilisateur est authentifié
+            if (!window.authModule || !window.authModule.isAuthenticated()) {
+                alert("Vous devez être connecté pour modifier un couloir.");
+                return;
+            }
+            
+            // Vérifier que la modale et les champs existent avant de les utiliser
+            const editModal = document.getElementById('editCouloirModal');
+            if (!editModal) {
+                console.error("La modale d'édition n'existe pas");
+                return;
+            }
+            
+            try {
+                // Pré-remplir le formulaire avec les données du couloir
+                const couloir = window.currentCouloirData;
+                
+                // Vérifier l'existence de chaque élément avant de lui assigner une valeur
+                const nomField = document.getElementById('editNomCouloir');
+                const latitudeField = document.getElementById('editLatitudeCouloir');
+                const longitudeField = document.getElementById('editLongitudeCouloir');
+                const expositionField = document.getElementById('editExpositionCouloir');
+                const altitudeMaxField = document.getElementById('editAltitudeMaxCouloir');
+                const altitudeMinField = document.getElementById('editAltitudeMinCouloir');
+                const penteField = document.getElementById('editPenteCouloir');
+                const cotationSkiField = document.getElementById('editCotationSkiCouloir');
+                const expositionSkiField = document.getElementById('editExpositionSkiCouloir');
+                const commentaireField = document.getElementById('editCommentaireCouloir');
+                const lienField = document.getElementById('editLienCouloir');
+                
+                // Assigner les valeurs seulement si l'élément existe
+                if (nomField) nomField.value = couloir.nom || '';
+                if (latitudeField) latitudeField.value = couloir.latitude || '';
+                if (longitudeField) longitudeField.value = couloir.longitude || '';
+                if (expositionField) expositionField.value = couloir.exposition || '';
+                if (altitudeMaxField) altitudeMaxField.value = couloir.altitude_max || '';
+                if (altitudeMinField) altitudeMinField.value = couloir.altitude_min || '';
+                if (penteField) penteField.value = couloir.pente || '';
+                if (cotationSkiField) cotationSkiField.value = couloir.cotation_ski || '';
+                if (expositionSkiField) expositionSkiField.value = couloir.exposition_ski || '';
+                if (commentaireField) commentaireField.value = couloir.commentaire || '';
+                if (lienField) lienField.value = couloir.lien || '';
+                
+                // Réinitialiser les erreurs
+                const editCouloirError = document.getElementById('editCouloirError');
+                if (editCouloirError) editCouloirError.textContent = '';
+                
+                // Afficher la modale
+                editModal.style.display = 'block';
+                
+            } catch (error) {
+                console.error("Erreur lors du pré-remplissage du formulaire d'édition:", error);
+                alert("Une erreur s'est produite lors de la préparation du formulaire d'édition.");
+            }
+        });
+    }
+    
+    // Gestion des événements pour la modal d'édition
+    if (cancelEditCouloirBtn) {
+        cancelEditCouloirBtn.addEventListener('click', function() {
+            if (editCouloirModal) editCouloirModal.style.display = 'none';
+        });
+    }
+    
+    if (closeEditModalBtn) {
+        closeEditModalBtn.addEventListener('click', function() {
+            if (editCouloirModal) editCouloirModal.style.display = 'none';
+        });
+    }
+    
+    window.addEventListener('click', function(event) {
+        if (event.target === editCouloirModal) {
+            editCouloirModal.style.display = 'none';
         }
-        
-        // Signal que le panneau est ouvert
-        infoPanelRight.dataset.isOpen = 'true';
+    });
+    
+    // Gérer la soumission du formulaire d'édition
+    if (editCouloirForm) {
+        editCouloirForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            try {
+                // Vérifier si l'utilisateur est connecté
+                const currentUser = window.authModule?.getCurrentUser?.();
+                if (!currentUser) {
+                    if (editCouloirError) editCouloirError.textContent = "Vous devez être connecté pour modifier un couloir.";
+                    return;
+                }
+                
+                // Vérifier si le couloir existe
+                if (!window.currentCouloirData || !window.currentCouloirData.id) {
+                    if (editCouloirError) editCouloirError.textContent = "Données du couloir invalides.";
+                    return;
+                }
+                
+                // Récupérer les valeurs du formulaire
+                const nom = document.getElementById('editNomCouloir').value;
+                const latitude = parseFloat(document.getElementById('editLatitudeCouloir').value);
+                const longitude = parseFloat(document.getElementById('editLongitudeCouloir').value);
+                const exposition = document.getElementById('editExpositionCouloir').value;
+                const altitude_max = parseInt(document.getElementById('editAltitudeMaxCouloir').value) || null;
+                const altitude_min = parseInt(document.getElementById('editAltitudeMinCouloir').value) || null;
+                const pente = parseInt(document.getElementById('editPenteCouloir').value) || null;
+                const cotation_ski = document.getElementById('editCotationSkiCouloir').value;
+                const exposition_ski = document.getElementById('editExpositionSkiCouloir').value;
+                const commentaire = document.getElementById('editCommentaireCouloir').value;
+                const lien = document.getElementById('editLienCouloir').value;
+                
+                // Validation des champs obligatoires
+                if (!nom || isNaN(latitude) || isNaN(longitude) || !exposition || !altitude_max) {
+                    if (editCouloirError) editCouloirError.textContent = 
+                        "Les champs Nom, Latitude, Longitude, Exposition et Altitude max sont obligatoires.";
+                    return;
+                }
+                
+                // Créer l'objet couloir mis à jour
+                const updatedCouloir = {
+                    id: window.currentCouloirData.id, // Conserver l'ID original
+                    nom,
+                    latitude,
+                    longitude,
+                    exposition,
+                    altitude_max,
+                    altitude_min,
+                    pente,
+                    cotation_ski,
+                    exposition_ski,
+                    commentaire,
+                    lien,
+                    user: window.currentCouloirData.user // Conserver l'utilisateur original
+                };
+                
+                // Mettre à jour le couloir dans la base de données
+                const success = await updateCouloir(updatedCouloir);
+                
+                if (success) {
+                    console.log(`Couloir "${nom}" mis à jour avec succès`);
+                    
+                    // Fermer la modale
+                    if (editCouloirModal) editCouloirModal.style.display = 'none';
+                    
+                    // Fermer le panneau d'information
+                    hideRightPanel();
+                    
+                    // Recharger les points sur la carte
+                    await fetchAndDisplayPoints();
+                    
+                    // Notification sans confirmation du navigateur
+                    const notification = document.createElement('div');
+                    notification.className = 'notification success';
+                    notification.innerHTML = `<p>Le couloir "${nom}" a été mis à jour avec succès.</p>`;
+                    document.body.appendChild(notification);
+                    
+                    // Disparaitre après 3 secondes
+                    setTimeout(() => {
+                        notification.classList.add('fadeOut');
+                        setTimeout(() => {
+                            document.body.removeChild(notification);
+                        }, 500);
+                    }, 3000);
+                } else {
+                    if (editCouloirError) editCouloirError.textContent = "Erreur lors de la mise à jour du couloir";
+                }
+            } catch (error) {
+                console.error("Erreur lors de la mise à jour du couloir:", error);
+                if (editCouloirError) editCouloirError.textContent = "Une erreur est survenue lors de la mise à jour du couloir";
+            }
+        });
     }
     
-    // Fonction pour fermer le panneau droit
-    function closeRightPanel() {
-        infoPanelRight.style.right = '-300px';
-        
-        // Repositionner le bouton login quand le panneau est fermé
-        if (loginBtn) {
-            loginBtn.style.transition = 'right 0.3s ease-in-out';
-            loginBtn.style.right = '10px';
+    // Fermer la modale lorsqu'on clique sur le bouton Annuler
+    if (cancelDeleteBtn) {
+        cancelDeleteBtn.addEventListener('click', function() {
+            if (deleteModal) deleteModal.style.display = 'none';
+        });
+    }
+    
+    // Fermer la modale lorsqu'on clique sur le X
+    if (closeDeleteModalBtn) {
+        closeDeleteModalBtn.addEventListener('click', function() {
+            if (deleteModal) deleteModal.style.display = 'none';
+        });
+    }
+    
+    // Fermer la modale lorsqu'on clique en dehors
+    window.addEventListener('click', function(event) {
+        if (event.target === deleteModal) {
+            deleteModal.style.display = 'none';
         }
-        
-        // Signal que le panneau est fermé
-        infoPanelRight.dataset.isOpen = 'false';
+    });
+    
+    // Gérer la soumission du formulaire de suppression
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const password = document.getElementById('deletePassword').value;
+            
+            try {
+                // Vérifier le mot de passe
+                const passwordValid = await verifyPassword(password);
+                if (!passwordValid) {
+                    if (deleteError) deleteError.textContent = "Mot de passe incorrect";
+                    return;
+                }
+                
+                // Si le mot de passe est valide, procéder à la suppression
+                const success = await deleteCouloir(currentCouloirId);
+                if (success) {
+                    console.log(`Couloir avec ID ${currentCouloirId} supprimé avec succès`);
+                    
+                    // Fermer la modale et le panneau droit
+                    if (deleteModal) deleteModal.style.display = 'none';
+                    hideRightPanel();
+                    
+                    // Recharger les points sur la carte
+                    await fetchAndDisplayPoints();
+                    
+                    // Notification sans confirmation du navigateur
+                    const notification = document.createElement('div');
+                    notification.className = 'notification warning';
+                    notification.innerHTML = `<p>Le couloir a été supprimé avec succès.</p>`;
+                    document.body.appendChild(notification);
+                    
+                    // Disparaitre après 3 secondes
+                    setTimeout(() => {
+                        notification.classList.add('fadeOut');
+                        setTimeout(() => {
+                            document.body.removeChild(notification);
+                        }, 500);
+                    }, 3000);
+                } else {
+                    if (deleteError) deleteError.textContent = "Erreur lors de la suppression du couloir";
+                }
+            } catch (error) {
+                console.error("Erreur lors de la suppression:", error);
+                if (deleteError) deleteError.textContent = "Une erreur est survenue lors de la suppression";
+            }
+        });
     }
-    
-    // Écouteur d'événement pour le bouton de fermeture du panneau
-    closePanelRight.addEventListener('click', closeRightPanel);
-    
-    // Initialiser la position du bouton login
-    if (loginBtn && infoPanelRight) {
-        loginBtn.style.transition = 'right 0.3s ease-in-out';
-        loginBtn.style.right = infoPanelRight.dataset.isOpen === 'true' ? '310px' : '10px';
-    }
-    
-    // ...existing code...
 });
 
-/* ...existing code... */
+// Fonction pour vérifier le mot de passe (à coordonner avec le module d'authentification)
+async function verifyPassword(password) {
+    // Utilisez la même méthode de hachage que dans auth.js
+    const hashedPassword = window.authModule?.hashPassword ? 
+        window.authModule.hashPassword(password) : hashPassword(password);
+    
+    // Accéder aux informations de l'utilisateur connecté
+    const currentUser = window.authModule?.getCurrentUser?.();
+    if (!currentUser) {
+        console.error("Aucun utilisateur connecté");
+        return false;
+    }
+    
+    // Comparer avec le mot de passe de l'utilisateur actuel
+    return currentUser.passwordHash === hashedPassword;
+}
+
+// Fonction de secours pour hacher le mot de passe si nécessaire
+function hashPassword(password) {
+    if (typeof CryptoJS !== 'undefined') {
+        return CryptoJS.SHA256(password).toString();
+    } else {
+        console.warn("CryptoJS n'est pas disponible, impossible de hacher le mot de passe");
+    }
+    return password; // Fallback non sécurisé
+}
+
+// Exposer la fonction pour qu'elle soit accessible depuis d'autres modules
+window.fetchAndDisplayPoints = fetchAndDisplayPoints;
+
+// Gestionnaire pour l'ajout d'un couloir
+document.addEventListener('DOMContentLoaded', function() {
+    // Récupérer les éléments du DOM
+    const addCouloirBtn = document.getElementById('addCouloirBtn');
+    const addCouloirModal = document.getElementById('addCouloirModal');
+    const cancelAddCouloirBtn = document.getElementById('cancelAddCouloirBtn');
+    const closeAddModalBtn = addCouloirModal?.querySelector('.close');
+    const addCouloirForm = document.getElementById('addCouloirForm');
+    const addCouloirError = document.getElementById('addCouloirError');
+    
+    // Fonction pour ouvrir la modale d'ajout de couloir
+    if (addCouloirBtn) {
+        addCouloirBtn.addEventListener('click', function() {
+            // Vérifier si l'utilisateur est authentifié
+            if (!window.authModule || !window.authModule.isAuthenticated()) {
+                alert("Vous devez être connecté pour ajouter un couloir.");
+                return;
+            }
+            
+            // Pré-remplir les coordonnées actuelles de la carte si disponible
+            if (map) {
+                const center = map.getCenter();
+                document.getElementById('latitudeCouloir').value = center.lat.toFixed(6);
+                document.getElementById('longitudeCouloir').value = center.lng.toFixed(6);
+            }
+            
+            // Réinitialiser le formulaire et les erreurs
+            if (addCouloirForm) addCouloirForm.reset();
+            if (addCouloirError) addCouloirError.textContent = '';
+            
+            // Afficher la modale
+            if (addCouloirModal) addCouloirModal.style.display = 'block';
+        });
+    }
+    
+    // Fermer la modale lorsqu'on clique sur le bouton Annuler
+    if (cancelAddCouloirBtn) {
+        cancelAddCouloirBtn.addEventListener('click', function() {
+            if (addCouloirModal) addCouloirModal.style.display = 'none';
+        });
+    }
+    
+    // Fermer la modale lorsqu'on clique sur le X
+    if (closeAddModalBtn) {
+        closeAddModalBtn.addEventListener('click', function() {
+            if (addCouloirModal) addCouloirModal.style.display = 'none';
+        });
+    }
+    
+    // Fermer la modale lorsqu'on clique en dehors
+    window.addEventListener('click', function(event) {
+        if (event.target === addCouloirModal) {
+            addCouloirModal.style.display = 'none';
+        }
+    });
+    
+    // Gérer la soumission du formulaire d'ajout de couloir
+    if (addCouloirForm) {
+        addCouloirForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            try {
+                // Vérifier si l'utilisateur est connecté
+                const currentUser = window.authModule?.getCurrentUser?.();
+                if (!currentUser) {
+                    if (addCouloirError) addCouloirError.textContent = "Vous devez être connecté pour ajouter un couloir.";
+                    return;
+                }
+                
+                // Récupérer les valeurs du formulaire
+                const nom = document.getElementById('nomCouloir').value;
+                const latitude = parseFloat(document.getElementById('latitudeCouloir').value);
+                const longitude = parseFloat(document.getElementById('longitudeCouloir').value);
+                const exposition = document.getElementById('expositionCouloir').value;
+                const altitude_max = parseInt(document.getElementById('altitudeMaxCouloir').value) || null;
+                const altitude_min = parseInt(document.getElementById('altitudeMinCouloir').value) || null;
+                const pente = parseInt(document.getElementById('penteCouloir').value) || null;
+                const cotation_ski = document.getElementById('cotationSkiCouloir').value;
+                const exposition_ski = document.getElementById('expositionSkiCouloir').value;
+                const commentaire = document.getElementById('commentaireCouloir').value;
+                const lien = document.getElementById('lienCouloir').value;
+                
+                // Validation des champs obligatoires
+                if (!nom || isNaN(latitude) || isNaN(longitude) || !exposition || !altitude_max) {
+                    if (addCouloirError) addCouloirError.textContent = 
+                        "Les champs Nom, Latitude, Longitude, Exposition et Altitude max sont obligatoires.";
+                    return;
+                }
+                
+                // Créer l'objet couloir
+                const newCouloir = {
+                    nom,
+                    latitude,
+                    longitude,
+                    exposition,
+                    altitude_max,
+                    altitude_min,
+                    pente,
+                    cotation_ski,
+                    exposition_ski,
+                    commentaire,
+                    lien,
+                    user: currentUser.username // Utiliser le nom d'utilisateur connecté
+                };
+                
+                // Ajouter le couloir à la base de données
+                const couloirId = await addCouloir(newCouloir);
+                if (couloirId) {
+                    console.log(`Couloir "${nom}" ajouté avec succès, ID:`, couloirId);
+                    
+                    // Fermer la modale
+                    if (addCouloirModal) addCouloirModal.style.display = 'none';
+                    
+                    // Recharger les points sur la carte
+                    await fetchAndDisplayPoints();
+                    
+                    // Notification sans confirmation du navigateur
+                    const notification = document.createElement('div');
+                    notification.className = 'notification success';
+                    notification.innerHTML = `<p>Le couloir "${nom}" a été ajouté avec succès.</p>`;
+                    document.body.appendChild(notification);
+                    
+                    // Disparaitre après 3 secondes
+                    setTimeout(() => {
+                        notification.classList.add('fadeOut');
+                        setTimeout(() => {
+                            document.body.removeChild(notification);
+                        }, 500);
+                    }, 3000);
+                } else {
+                    if (addCouloirError) addCouloirError.textContent = "Erreur lors de l'ajout du couloir";
+                }
+            } catch (error) {
+                console.error("Erreur lors de l'ajout du couloir:", error);
+                if (addCouloirError) addCouloirError.textContent = "Une erreur est survenue lors de l'ajout du couloir";
+            }
+        });
+    }
+});
+
+// Ajouter une fonction spéciale pour réinitialiser la base de données
+window.resetAndReloadDatabase = async function() {
+    try {
+        // Confirmation de l'utilisateur
+        if (confirm("Êtes-vous sûr de vouloir réinitialiser la base de données ? Tous les couloirs seront supprimés et remplacés par les données de test.")) {
+            console.log("Réinitialisation de la base de données en cours...");
+            await resetDatabase();
+            console.log("Base de données réinitialisée, rechargement des points...");
+            await fetchAndDisplayPoints();
+            console.log("Points rechargés avec succès");
+            alert("Base de données réinitialisée avec succès !");
+        }
+    } catch (error) {
+        console.error("Erreur lors de la réinitialisation de la base de données:", error);
+        alert("Erreur lors de la réinitialisation de la base de données");
+    }
+};
