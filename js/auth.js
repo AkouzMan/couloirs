@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!loginForm) console.error("Élément 'loginForm' non trouvé");
     
     // Fonction simple de hachage pour les mots de passe
-    // Note: Dans une application réelle, utilisez bcrypt ou un autre algorithme plus sécurisé
     function hashPassword(password) {
         // Vérifier que CryptoJS est disponible
         if (typeof CryptoJS === 'undefined') {
@@ -27,15 +26,9 @@ document.addEventListener('DOMContentLoaded', function() {
         return CryptoJS.SHA256(password).toString();
     }
     
-    // Utilisateurs avec mots de passe hachés
-    const users = [
-        { username: 'admin', passwordHash: hashPassword('alpine2024') },
-        { username: 'demo', passwordHash: hashPassword('demo123') },
-        { username: 'ak', passwordHash: hashPassword('16081995') }
-    ];
-    
     // État d'authentification
     let isAuthenticated = false;
+    let currentUser = null;
     
     // Vérifier s'il y a un token dans le localStorage
     function checkAuth() {
@@ -46,6 +39,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const tokenData = JSON.parse(atob(authToken.split('.')[1]));
                 if (tokenData.exp > Date.now() / 1000) {
                     isAuthenticated = true;
+                    currentUser = { 
+                        username: tokenData.username,
+                        role: tokenData.role
+                    };
                     userStatus.textContent = `Connecté en tant que ${tokenData.username}`;
                     loginBtn.textContent = 'Déconnexion';
                     updateUIState();
@@ -62,6 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         isAuthenticated = false;
+        currentUser = null;
         loginBtn.textContent = 'Connexion';
         userStatus.textContent = '';
         updateUIState();
@@ -169,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Traiter la soumission du formulaire
     if (loginForm) {
-        loginForm.addEventListener('submit', function(e) {
+        loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             console.log("Tentative de connexion...");
             
@@ -179,34 +177,45 @@ document.addEventListener('DOMContentLoaded', function() {
             // Hacher le mot de passe entré pour le comparer
             const hashedPassword = hashPassword(password);
             
-            // Vérifier les identifiants avec le hash du mot de passe
-            const user = users.find(u => u.username === username && u.passwordHash === hashedPassword);
-            
-            if (user) {
-                console.log("Connexion réussie pour:", username);
-                // Créer un token JWT simplifié (dans un cas réel, cela serait fait côté serveur)
-                const now = Math.floor(Date.now() / 1000);
-                const payload = {
-                    username: user.username,
-                    iat: now,
-                    exp: now + 3600 // Expire dans 1 heure
-                };
+            try {
+                // Utiliser la fonction de vérification des identifiants depuis la base de données
+                const user = await window.dbAuth.verifyUserCredentials(username, hashedPassword);
                 
-                // Format simplifié d'un JWT (header.payload.signature)
-                const token = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify(payload))}.fake-signature`;
-                
-                // Stocker le token
-                localStorage.setItem('authToken', token);
-                isAuthenticated = true;
-                userStatus.textContent = `Connecté en tant que ${user.username}`;
-                loginBtn.textContent = 'Déconnexion';
-                loginModal.style.display = 'none';
-                loginForm.reset();
-                loginError.textContent = '';
-                updateUIState();
-            } else {
-                console.log("Échec de connexion pour:", username);
-                loginError.textContent = 'Nom d\'utilisateur ou mot de passe incorrect';
+                if (user) {
+                    console.log("Connexion réussie pour:", username);
+                    // Créer un token JWT simplifié
+                    const now = Math.floor(Date.now() / 1000);
+                    const payload = {
+                        username: user.username,
+                        role: user.role,
+                        iat: now,
+                        exp: now + 3600 // Expire dans 1 heure
+                    };
+                    
+                    // Format simplifié d'un JWT
+                    const token = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify(payload))}.fake-signature`;
+                    
+                    // Stocker le token
+                    localStorage.setItem('authToken', token);
+                    isAuthenticated = true;
+                    currentUser = {
+                        username: user.username,
+                        role: user.role,
+                        passwordHash: user.passwordHash // Conservé pour la vérification de mot de passe
+                    };
+                    userStatus.textContent = `Connecté en tant que ${user.username}`;
+                    loginBtn.textContent = 'Déconnexion';
+                    loginModal.style.display = 'none';
+                    loginForm.reset();
+                    loginError.textContent = '';
+                    updateUIState();
+                } else {
+                    console.log("Échec de connexion pour:", username);
+                    loginError.textContent = 'Nom d\'utilisateur ou mot de passe incorrect';
+                }
+            } catch (error) {
+                console.error("Erreur lors de la connexion:", error);
+                loginError.textContent = 'Une erreur est survenue lors de la connexion';
             }
         });
     }
@@ -216,6 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("Déconnexion de l'utilisateur");
         localStorage.removeItem('authToken');
         isAuthenticated = false;
+        currentUser = null;
         userStatus.textContent = '';
         loginBtn.textContent = 'Connexion';
         
@@ -275,37 +285,12 @@ document.addEventListener('DOMContentLoaded', function() {
     window.authModule = {
         isAuthenticated: () => isAuthenticated,
         updateUIState: updateUIState,
-        
-        // Ajouter ces fonctions
         hashPassword: hashPassword,
-        checkAuthStatus: checkAuth, // Assurer que checkAuthStatus est bien défini
+        checkAuthStatus: checkAuth,
         
         // Fonction pour obtenir l'utilisateur actuel
         getCurrentUser: function() {
-            const authToken = localStorage.getItem('authToken');
-            
-            if (!authToken) {
-                console.warn("Aucun token d'authentification trouvé");
-                return null;
-            }
-            
-            try {
-                const tokenData = JSON.parse(atob(authToken.split('.')[1]));
-                const username = tokenData.username;
-                
-                // Trouver l'utilisateur correspondant
-                const user = users.find(u => u.username === username);
-                
-                if (!user) {
-                    console.warn(`Utilisateur ${username} non trouvé`);
-                    return null;
-                }
-                
-                return user;
-            } catch (e) {
-                console.error('Erreur lors de la récupération de l\'utilisateur actuel:', e);
-                return null;
-            }
+            return currentUser;
         }
     };
     

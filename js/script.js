@@ -75,6 +75,12 @@ async function loadAvailableData() {
         // Initialiser la base de données et charger les points
         try {
             await initDatabase();
+            
+            // S'assurer que les écouteurs de synchronisation sont configurés
+            if (typeof setupDatabaseSyncListeners === 'function') {
+                setupDatabaseSyncListeners();
+            }
+            
             await fetchAndDisplayPoints();
             console.log("Données de la base de données chargées et affichées");
         } catch (dbError) {
@@ -1226,5 +1232,15 @@ window.resetAndReloadDatabase = async function() {
     } catch (error) {
         console.error("Erreur lors de la réinitialisation de la base de données:", error);
         alert("Erreur lors de la réinitialisation de la base de données");
+    }
+};
+
+// Fonction améliorée pour recharger les points automatiquement
+window.reloadPoints = async function() {
+    try {
+        console.log("Rechargement automatique des points suite à une modification de la base de données");
+        await fetchAndDisplayPoints();
+    } catch (error) {
+        console.error("Erreur lors du rechargement des points:", error);
     }
 };

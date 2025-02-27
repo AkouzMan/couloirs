@@ -1,7 +1,8 @@
 // Constants for database
 const DB_NAME = "couloirsDB";
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Augmenter la version pour forcer la mise à niveau
 const STORE_NAME = "couloirs";
+const USER_STORE_NAME = "users";
 
 let dbPromise = null;
 
@@ -21,15 +22,17 @@ function openDatabase() {
             return;
         }
         
-        // Open database
+        // Open database with updated version
         const request = indexedDB.open(DB_NAME, DB_VERSION);
         
         // Handle database upgrade (called if the database doesn't exist or version changes)
         request.onupgradeneeded = function(event) {
+            console.log("Mise à niveau de la base de données vers la version", DB_VERSION);
             const db = event.target.result;
             
-            // Create object store with auto-incrementing key
+            // Create object store for couloirs if it doesn't exist
             if (!db.objectStoreNames.contains(STORE_NAME)) {
+                console.log("Création du magasin d'objets 'couloirs'");
                 const store = db.createObjectStore(STORE_NAME, { 
                     keyPath: 'id', 
                     autoIncrement: true 
@@ -40,14 +43,42 @@ function openDatabase() {
                 store.createIndex('user', 'user', { unique: false });
                 store.createIndex('exposition', 'exposition', { unique: false });
                 
-                console.log("Structure de la base de données créée");
+                console.log("Structure de la base de données Couloirs créée");
+            } else {
+                console.log("Le magasin d'objets 'couloirs' existe déjà");
             }
+            
+            // Create object store for users if it doesn't exist
+            if (!db.objectStoreNames.contains(USER_STORE_NAME)) {
+                console.log("Création du magasin d'objets 'users'");
+                const userStore = db.createObjectStore(USER_STORE_NAME, { 
+                    keyPath: 'username'
+                });
+                
+                // Create index for username (although it's the key)
+                userStore.createIndex('username', 'username', { unique: true });
+                
+                console.log("Structure de la base de données Users créée");
+            } else {
+                console.log("Le magasin d'objets 'users' existe déjà");
+            }
+        };
+        
+        // Log any errors during upgrade
+        request.onupgradeneeded.onerror = function(event) {
+            console.error("Erreur lors de la mise à niveau de la base de données:", event.target.error);
+            reject(event.target.error);
         };
         
         // Success handler
         request.onsuccess = function(event) {
             const db = event.target.result;
-            console.log("Base de données ouverte avec succès");
+            console.log("Base de données ouverte avec succès, version:", db.version);
+            
+            // Vérification des magasins d'objets
+            const storeNames = Array.from(db.objectStoreNames);
+            console.log("Magasins d'objets disponibles:", storeNames);
+            
             resolve(db);
         };
         
@@ -55,6 +86,12 @@ function openDatabase() {
         request.onerror = function(event) {
             console.error("Erreur lors de l'ouverture de la base de données", event.target.error);
             reject(event.target.error);
+        };
+        
+        // Bloqué (pour débogage)
+        request.onblocked = function(event) {
+            console.warn("Ouverture de la base de données bloquée, fermez les autres onglets utilisant la base de données");
+            alert("Veuillez fermer tous les autres onglets de cette application pour permettre la mise à niveau de la base de données");
         };
     });
     
@@ -96,8 +133,15 @@ async function initDatabase() {
             console.log("Base de données vide, insertion des données de test...");
             await insertTestData();
             console.log("Base de données initialisée avec succès");
+            
+            // Initialiser les utilisateurs également
+            await initUsers();
+            console.log("Base de données d'utilisateurs initialisée avec succès");
         } else {
             console.log("Base de données déjà initialisée");
+            
+            // Vérifier quand même les utilisateurs
+            await initUsers();
         }
         
         return true;
@@ -118,8 +162,13 @@ async function addCouloir(couloir) {
             const request = store.add(couloir);
             
             request.onsuccess = function(event) {
-                console.log("Couloir ajouté avec succès, ID:", event.target.result);
-                resolve(event.target.result);
+                const newId = event.target.result;
+                console.log("Couloir ajouté avec succès, ID:", newId);
+                
+                // Notifier les autres fenêtres de la mise à jour de la base de données
+                notifyDatabaseChange("add", { id: newId, data: couloir });
+                
+                resolve(newId);
             };
             
             request.onerror = function(event) {
@@ -262,6 +311,10 @@ async function updateCouloir(couloir) {
             
             request.onsuccess = function(event) {
                 console.log("Couloir mis à jour avec succès, ID:", event.target.result);
+                
+                // Notifier les autres fenêtres de la mise à jour de la base de données
+                notifyDatabaseChange("update", { id: couloir.id, data: couloir });
+                
                 resolve(event.target.result);
             };
             
@@ -288,6 +341,10 @@ async function deleteCouloir(id) {
             
             request.onsuccess = function() {
                 console.log(`Couloir avec ID ${id} supprimé avec succès`);
+                
+                // Notifier les autres fenêtres de la mise à jour de la base de données
+                notifyDatabaseChange("delete", { id: id });
+                
                 resolve(true);
             };
             
@@ -342,3 +399,251 @@ async function resetDatabase() {
         throw error;
     }
 }
+
+// Système de synchronisation entre fenêtres
+function notifyDatabaseChange(operation, data) {
+    // Utiliser BroadcastChannel API pour la communication entre fenêtres
+    if ('BroadcastChannel' in window) {
+        const channel = new BroadcastChannel('couloirs_db_sync');
+        channel.postMessage({ operation, data, timestamp: Date.now() });
+        channel.close();
+    } else {
+        // Fallback pour les navigateurs sans BroadcastChannel : utiliser localStorage
+        const syncMessage = JSON.stringify({ operation, data, timestamp: Date.now() });
+        localStorage.setItem('couloirs_db_sync', syncMessage);
+        // Déclencher un événement storage pour notifier les autres onglets
+        window.dispatchEvent(new StorageEvent('storage', {
+            key: 'couloirs_db_sync',
+            newValue: syncMessage
+        }));
+    }
+}
+
+// Configuration des écouteurs pour les mises à jour de la base de données
+function setupDatabaseSyncListeners() {
+    if ('BroadcastChannel' in window) {
+        const channel = new BroadcastChannel('couloirs_db_sync');
+        channel.onmessage = function(event) {
+            handleDatabaseSync(event.data);
+        };
+    } else {
+        // Fallback en utilisant l'événement storage de localStorage
+        window.addEventListener('storage', function(event) {
+            if (event.key === 'couloirs_db_sync') {
+                try {
+                    const data = JSON.parse(event.newValue);
+                    handleDatabaseSync(data);
+                } catch (e) {
+                    console.error("Erreur lors du parsing des données de synchronisation:", e);
+                }
+            }
+        });
+    }
+}
+
+// Gestion des synchronisations de base de données
+function handleDatabaseSync(syncData) {
+    console.log("Notification de mise à jour de la base de données reçue:", syncData);
+    // Recharger les points sur la carte
+    if (window.fetchAndDisplayPoints && typeof window.fetchAndDisplayPoints === 'function') {
+        window.fetchAndDisplayPoints().catch(error => {
+            console.error("Erreur lors du rechargement des points suite à une mise à jour de la base de données:", error);
+        });
+    }
+}
+
+// Initialiser les écouteurs de synchronisation au chargement du script
+setupDatabaseSyncListeners();
+
+// Fonction pour initialiser les utilisateurs par défaut
+async function initUsers() {
+    try {
+        const db = await openDatabase();
+        
+        // Vérifier si le magasin d'objets users existe
+        if (!Array.from(db.objectStoreNames).includes(USER_STORE_NAME)) {
+            console.error("Le magasin d'objets 'users' n'existe pas dans la base de données");
+            console.log("Fermeture et réouverture de la base de données pour initialiser");
+            
+            // Forcer la fermeture puis réouverture pour créer le magasin
+            db.close();
+            dbPromise = null;
+            
+            // Réessayer après fermeture
+            await openDatabase();
+            return initUsers(); // Appel récursif après réinitialisation
+        }
+        
+        // Continuer avec la transaction si le magasin existe maintenant
+        const tx = db.transaction(USER_STORE_NAME, "readonly");
+        const store = tx.objectStore(USER_STORE_NAME);
+        
+        // Compter les utilisateurs existants
+        const countRequest = store.count();
+        
+        return new Promise((resolve, reject) => {
+            countRequest.onsuccess = async function() {
+                if (countRequest.result === 0) {
+                    // Aucun utilisateur, ajouter les utilisateurs par défaut
+                    console.log("Aucun utilisateur trouvé, initialisation des utilisateurs par défaut...");
+                    await insertDefaultUsers();
+                    resolve(true);
+                } else {
+                    console.log(`${countRequest.result} utilisateurs déjà existants dans la base`);
+                    resolve(false);
+                }
+            };
+            
+            countRequest.onerror = function(event) {
+                console.error("Erreur lors du comptage des utilisateurs", event.target.error);
+                reject(event.target.error);
+            };
+        });
+    } catch (error) {
+        console.error("Erreur lors de l'initialisation des utilisateurs:", error);
+        return false;
+    }
+}
+
+// Fonction pour insérer les utilisateurs par défaut avec vérification
+async function insertDefaultUsers() {
+    const defaultUsers = [
+        { username: 'admin', passwordHash: hashPassword('alpine2024'), role: 'admin' },
+        { username: 'demo', passwordHash: hashPassword('demo123'), role: 'user' },
+        { username: 'ak', passwordHash: hashPassword('16081995'), role: 'admin' }
+    ];
+    
+    try {
+        const db = await openDatabase();
+        
+        // S'assurer que le magasin d'objets existe
+        if (!Array.from(db.objectStoreNames).includes(USER_STORE_NAME)) {
+            throw new Error(`Le magasin d'objets '${USER_STORE_NAME}' n'existe pas dans la base de données`);
+        }
+        
+        const tx = db.transaction(USER_STORE_NAME, "readwrite");
+        const store = tx.objectStore(USER_STORE_NAME);
+        
+        console.log("Début d'insertion des utilisateurs par défaut");
+        
+        for (const user of defaultUsers) {
+            await new Promise((resolve, reject) => {
+                const request = store.put(user);
+                
+                request.onsuccess = function() {
+                    console.log(`Utilisateur ${user.username} ajouté avec succès`);
+                    resolve();
+                };
+                
+                request.onerror = function(event) {
+                    console.error(`Erreur lors de l'ajout de l'utilisateur ${user.username}:`, event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+        
+        console.log("Tous les utilisateurs par défaut ont été insérés avec succès");
+        return true;
+    } catch (error) {
+        console.error("Erreur lors de l'insertion des utilisateurs par défaut:", error);
+        return false;
+    }
+}
+
+// Fonction pour vérifier les identifiants d'un utilisateur
+async function verifyUserCredentials(username, passwordHash) {
+    try {
+        const db = await openDatabase();
+        const tx = db.transaction(USER_STORE_NAME, "readonly");
+        const store = tx.objectStore(USER_STORE_NAME);
+        
+        return new Promise((resolve, reject) => {
+            const request = store.get(username);
+            
+            request.onsuccess = function(event) {
+                const user = event.target.result;
+                if (user && user.passwordHash === passwordHash) {
+                    console.log(`Utilisateur ${username} authentifié avec succès`);
+                    resolve(user);
+                } else {
+                    console.log(`Authentification échouée pour ${username}`);
+                    resolve(null);
+                }
+            };
+            
+            request.onerror = function(event) {
+                console.error(`Erreur lors de la vérification des identifiants pour ${username}:`, event.target.error);
+                reject(event.target.error);
+            };
+        });
+    } catch (error) {
+        console.error(`Erreur lors de la vérification des identifiants pour ${username}:`, error);
+        return null;
+    }
+}
+
+// Fonction pour hacher un mot de passe
+function hashPassword(password) {
+    if (typeof CryptoJS !== 'undefined') {
+        return CryptoJS.SHA256(password).toString();
+    } else {
+        console.warn("CryptoJS n'est pas disponible, impossible de hacher le mot de passe");
+        return password; // Fallback non sécurisé
+    }
+}
+
+// Exposer les fonctions d'authentification
+window.dbAuth = {
+    verifyUserCredentials,
+    hashPassword
+};
+
+// Fonction pour supprimer complètement la base de données et la recréer
+async function resetDatabaseCompletely() {
+    try {
+        // Fermer toute connexion existante
+        if (dbPromise) {
+            const db = await dbPromise;
+            db.close();
+            dbPromise = null;
+        }
+        
+        // Supprimer la base de données
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.deleteDatabase(DB_NAME);
+            
+            request.onsuccess = function() {
+                console.log("Base de données supprimée avec succès");
+                
+                // Réinitialiser puis réouvrir
+                setTimeout(async () => {
+                    try {
+                        await openDatabase(); // Rouvre la base de données
+                        await initDatabase(); // Réinitialise les données
+                        console.log("Base de données entièrement réinitialisée");
+                        resolve(true);
+                    } catch (error) {
+                        console.error("Erreur lors de la réinitialisation de la base de données:", error);
+                        reject(error);
+                    }
+                }, 500);
+            };
+            
+            request.onerror = function(event) {
+                console.error("Erreur lors de la suppression de la base de données:", event.target.error);
+                reject(event.target.error);
+            };
+            
+            request.onblocked = function() {
+                console.warn("La suppression de la base de données est bloquée");
+                alert("Veuillez fermer tous les autres onglets utilisant cette application");
+            };
+        });
+    } catch (error) {
+        console.error("Erreur lors de la réinitialisation complète de la base de données:", error);
+        throw error;
+    }
+}
+
+// Exposer la fonction pour un reset complet
+window.resetDatabaseCompletely = resetDatabaseCompletely;

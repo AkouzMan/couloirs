@@ -330,6 +330,7 @@ body.interacting #map {
     padding-top: 15px;
     border-top: 1px solid #ddd;
     text-align: center;
+    width: 100%;
 }
 
 /* Styles améliorés pour la modale de suppression */
@@ -338,6 +339,7 @@ body.interacting #map {
     justify-content: space-between;
     margin-top: 20px;
     gap: 10px; /* Espace entre les boutons */
+    width: 100%;
 }
 
 .modal-content .form-actions button {
@@ -572,13 +574,62 @@ select {
     display: flex;
     gap: 10px;
     justify-content: center;
+    width: 100%;
+    align-items: stretch; /* Important: assure que tous les boutons s'étirent à la même hauteur */
 }
 
 .button-group button {
     flex: 1;
-    max-width: 45%;
-    height: 38px; /* Hauteur fixe pour tous les boutons */
+    min-width: 80px;
+    height: 38px;
+    margin: 0; /* Supprime toute marge qui pourrait causer des décalages */
+    padding: 0 8px;
+    display: flex; /* Transforme le bouton en conteneur flex */
+    align-items: center; /* Centre verticalement le contenu */
+    justify-content: center; /* Centre horizontalement le contenu */
+    vertical-align: middle; /* Assure l'alignement vertical */
+    box-sizing: border-box; /* S'assure que padding et borders sont inclus dans la dimension */
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Correction des boutons uniformes dans les modales */
+.uniform-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    width: 100%;
+    align-items: stretch; /* Assure que tous les boutons s'étirent à la même hauteur */
+}
+
+.uniform-buttons button {
+    flex: 1;
+    height: 40px;
+    margin: 0;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    text-align: center;
     line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Réinitialiser les marges et paddings qui pourraient interférer */
+.action-button, .edit-btn, .primary-btn, .danger-btn, #cancelDeleteBtn, #confirmDeleteBtn {
+    margin: 0;
+    box-sizing: border-box;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    font-size: 14px;
 }
 
 /* Style pour le système de notifications */
@@ -698,19 +749,22 @@ select {
     display: flex;
     gap: 10px;
     justify-content: space-between;
+    width: 100%;
+    align-items: stretch; /* Assure que tous les boutons s'étirent à la même hauteur */
 }
 
 .uniform-buttons button {
     flex: 1;
     height: 40px; /* Hauteur fixe pour tous les boutons */
-    overflow: hidden;
-    white-space: normal; /* Permettre le retour à la ligne du texte si nécessaire */
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
     line-height: 1.2;
-    padding: 5px 10px;
+    padding: 0 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Ajustement pour les boutons de suppression */
@@ -719,4 +773,26 @@ select {
     align-items: center;
     justify-content: center;
     min-height: 40px;
+    flex-basis: 0;
+    flex-grow: 1;
+}
+
+/* Style commun pour tous les boutons d'action */
+.action-button {
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    font-size: 14px;
+}
+
+/* Application du style commun */
+.edit-btn, .primary-btn, .danger-btn, #cancelDeleteBtn {
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    font-size: 14px;
 }

@@ -1,29 +1,24 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carte des couloirs</title>
-
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link rel="stylesheet" href="css/style.css">
-
-    <!-- Bibliothèques externes -->
     <script src="js/crypto-js.min.js"></script>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
 </head>
 
 <body>
-
     <!-- Bandeau d'information -->
     <div id="infoBanner">
         <strong>Validité du Bulletin :</strong> <span id="bulletinValidity">Chargement...</span> |
         <strong>Prochaine émission :</strong> <span id="nextEmission">Chargement...</span>
     </div>
 
-    <!-- Modifier le conteneur login pour avoir une structure plus adaptée -->
+    <!-- Conteneur pour les boutons de connexion/ajout -->
     <div id="loginContainer">
         <button id="loginBtn">Connexion</button>
         <span id="userStatus" class="auth-required"></span>
@@ -32,40 +27,27 @@
 
     <!-- Légende -->
     <div id="legend">
-        <div>
-            <div class="legend-color" style="background-color: #CCFF66;"></div><span>Faible</span>
-        </div>
-        <div>
-            <div class="legend-color" style="background-color: #FFFF00;"></div><span>Modéré</span>
-        </div>
-        <div>
-            <div class="legend-color" style="background-color: #FF9900;"></div><span>Considérable</span>
-        </div>
-        <div>
-            <div class="legend-color" style="background-color: #FF0000;"></div><span>Élevé</span>
-        </div>
-        <div>
-            <div class="legend-color" style="background-color: #800000;"></div><span>Très élevé</span>
-        </div>
+        <div><div class="legend-color" style="background-color: #CCFF66;"></div><span>Faible</span></div>
+        <div><div class="legend-color" style="background-color: #FFFF00;"></div><span>Modéré</span></div>
+        <div><div class="legend-color" style="background-color: #FF9900;"></div><span>Considérable</span></div>
+        <div><div class="legend-color" style="background-color: #FF0000;"></div><span>Élevé</span></div>
+        <div><div class="legend-color" style="background-color: #800000;"></div><span>Très élevé</span></div>
     </div>
 
-    <!-- Panneau d'information latéral -->
+    <!-- Panneau d'information latéral gauche -->
     <div id="infoPanelLeft">
         <button id="closePanelLeft">X</button>
         <h1 id="panelLeftTitre"></h1>
-        <p>
-        <h1>Niveau de danger :</h1> <span id="panelDanger"></span></p>
-        <p>
-        <h1>Expositions :</h1> <span id="panelExpositions"></span></p>
-        <p>
-        <h1>Altitudes :</h1> <span id="panelAltitude"></span></p>
-        <p>
-        <h1>Problème type :</h1> <span id="panelproblemTyp"></span></p>
+        <p><h1>Niveau de danger :</h1> <span id="panelDanger"></span></p>
+        <p><h1>Expositions :</h1> <span id="panelExpositions"></span></p>
+        <p><h1>Altitudes :</h1> <span id="panelAltitude"></span></p>
+        <p><h1>Problème type :</h1> <span id="panelproblemTyp"></span></p>
         <p><span id="panelSituation"></span></p>
         <p><span id="panelComment"></span></p>
         <p><span id="panelMeteo"></span></p>
     </div>
 
+    <!-- Panneau d'information latéral droit -->
     <div id="infoPanelRight">
         <button id="closePanelRight">X</button>
         <h1 id="panelRightTitre"></h1>
@@ -78,21 +60,18 @@
         <p><strong>Altitude :</strong> <span id="panelRightAltitude"></span></p>
         <p><strong>Commentaire :</strong> <span id="panelRightComment"></span></p>
         <p><strong>Lien :</strong> <a id="panelRightLien" href="#" target="_blank">Topo</a></p>
-        
-        <!-- Ajout de l'information sur l'auteur du couloir -->
         <p class="couloir-author"><em>Couloir ajouté par : <span id="panelRightAuthor"></span></em></p>
-        
-        <!-- Ajout du bouton de suppression en bas du panneau -->
         <div class="panel-actions auth-required">
             <div class="button-group">
-                <button id="editCouloirBtn" class="edit-btn">Modifier</button>
-                <button id="deleteCouloirBtn" class="danger-btn">Supprimer</button>
+                <button id="editCouloirBtn" class="edit-btn action-button">Modifier</button>
+                <button id="deleteCouloirBtn" class="danger-btn action-button">Supprimer</button>
             </div>
         </div>
     </div>
 
     <!-- Carte -->
     <div id="map"></div>
+
     <!-- Modal de connexion -->
     <div id="loginModal" class="modal">
         <div class="modal-content">
@@ -114,7 +93,8 @@
             </form>
         </div>
     </div>
-    <!-- Ajout de la modale de confirmation de suppression -->
+
+    <!-- Modal de confirmation de suppression -->
     <div id="deleteModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -127,14 +107,15 @@
                     <input type="password" id="deletePassword" required>
                 </div>
                 <div class="form-actions uniform-buttons">
-                    <button type="button" id="cancelDeleteBtn">Annuler</button>
-                    <button type="submit" id="confirmDeleteBtn" class="danger-btn">Confirmer la suppression</button>
+                    <button type="button" id="cancelDeleteBtn" class="action-button">Annuler</button>
+                    <button type="submit" id="confirmDeleteBtn" class="danger-btn action-button">Confirmer</button>
                 </div>
                 <div id="deleteError" class="error-message"></div>
             </form>
         </div>
     </div>
-    <!-- Ajout de la modale pour ajouter un nouveau couloir -->
+
+    <!-- Modal pour ajouter un couloir -->
     <div id="addCouloirModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -144,17 +125,19 @@
                     <label for="nomCouloir">Nom du couloir*:</label>
                     <input type="text" id="nomCouloir" required>
                 </div>
-                <div class="form-group">
-                    <label for="latitudeCouloir">Latitude*:</label>
-                    <input type="number" id="latitudeCouloir" step="0.000001" required>
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label for="latitudeCouloir">Latitude*:</label>
+                        <input type="number" id="latitudeCouloir" step="0.001" required>
+                    </div>
+                    <div class="form-group half">
+                        <label for="longitudeCouloir">Longitude*:</label>
+                        <input type="number" id="longitudeCouloir" step="0.001" required>
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label for="longitudeCouloir">Longitude*:</label>
-                    <input type="number" id="longitudeCouloir" step="0.000001" required>
-                </div>
-                <div class="form-group">
-                    <label for="expositionCouloir">Exposition:</label>
-                    <select id="expositionCouloir">
+                    <label for="expositionCouloir">Exposition*:</label>
+                    <select id="expositionCouloir" required>
                         <option value="">Non spécifié</option>
                         <option value="N">Nord</option>
                         <option value="NE">Nord-Est</option>
@@ -166,9 +149,10 @@
                         <option value="NO">Nord-Ouest</option>
                     </select>
                 </div>
-                <div class="form-row">
-                    <div class="form-group half">
-                        <label for="altitudeMaxCouloir">Altitude max (m)*: <span class="input-note">ou altitude moyenne</span></label>
+                <div class="form-row altitude-row">
+                    <div class="form-group half-with-note">
+                        <label for="altitudeMaxCouloir">Altitude max (m)*:</label>
+                        <span class="input-note">ou altitude moyenne</span>
                         <input type="number" id="altitudeMaxCouloir" required>
                     </div>
                     <div class="form-group half">
@@ -198,15 +182,16 @@
                     <label for="lienCouloir">Lien (topo):</label>
                     <input type="url" id="lienCouloir">
                 </div>
-                <div class="form-actions">
-                    <button type="button" id="cancelAddCouloirBtn">Annuler</button>
-                    <button type="submit" id="confirmAddCouloirBtn" class="primary-btn">Ajouter le couloir</button>
+                <div class="form-actions uniform-buttons">
+                    <button type="button" id="cancelAddCouloirBtn" class="action-button">Annuler</button>
+                    <button type="submit" id="confirmAddCouloirBtn" class="primary-btn action-button">Ajouter le couloir</button>
                 </div>
                 <div id="addCouloirError" class="error-message"></div>
             </form>
         </div>
     </div>
-    <!-- Ajout de la modale pour modifier un couloir -->
+
+    <!-- Modal pour modifier un couloir -->
     <div id="editCouloirModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -216,13 +201,15 @@
                     <label for="editNomCouloir">Nom du couloir*:</label>
                     <input type="text" id="editNomCouloir" required>
                 </div>
-                <div class="form-group">
-                    <label for="editLatitudeCouloir">Latitude*:</label>
-                    <input type="number" id="editLatitudeCouloir" step="0.000001" required>
-                </div>
-                <div class="form-group">
-                    <label for="editLongitudeCouloir">Longitude*:</label>
-                    <input type="number" id="editLongitudeCouloir" step="0.000001" required>
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label for="editLatitudeCouloir">Latitude*:</label>
+                        <input type="number" id="editLatitudeCouloir" step="0.000001" required>
+                    </div>
+                    <div class="form-group half">
+                        <label for="editLongitudeCouloir">Longitude*:</label>
+                        <input type="number" id="editLongitudeCouloir" step="0.000001" required>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="editExpositionCouloir">Exposition*:</label>
@@ -238,9 +225,10 @@
                         <option value="NO">Nord-Ouest (NO)</option>
                     </select>
                 </div>
-                <div class="form-row">
-                    <div class="form-group half">
-                        <label for="editAltitudeMaxCouloir">Altitude max (m)*: <span class="input-note">ou altitude moyenne</span></label>
+                <div class="form-row altitude-row">
+                    <div class="form-group half-with-note">
+                        <label for="editAltitudeMaxCouloir">Altitude max (m)*:</label>
+                        <span class="input-note">ou altitude moyenne</span>
                         <input type="number" id="editAltitudeMaxCouloir" required>
                     </div>
                     <div class="form-group half">
@@ -270,21 +258,20 @@
                     <label for="editLienCouloir">Lien (topo):</label>
                     <input type="url" id="editLienCouloir">
                 </div>
-                <div class="form-actions">
-                    <button type="button" id="cancelEditCouloirBtn">Annuler</button>
-                    <button type="submit" id="confirmEditCouloirBtn" class="primary-btn">Enregistrer les modifications</button>
+                <div class="form-actions uniform-buttons">
+                    <button type="button" id="cancelEditCouloirBtn" class="action-button">Annuler</button>
+                    <button type="submit" id="confirmEditCouloirBtn" class="primary-btn action-button">Enregistrer</button>
                 </div>
                 <div id="editCouloirError" class="error-message"></div>
             </form>
         </div>
     </div>
 
-    <!-- Chargement des scripts dans l'ordre correct -->
+    <!-- Chargement des scripts -->
     <script src="js/utils.js"></script>
     <script src="js/db.js"></script>
-    <script src="js/script.js"></script> <!-- Charger script.js avant auth.js pour que updateMapLayersVisibility soit défini -->
+    <script src="js/script.js"></script>
     <script src="js/auth.js"></script>
-    <script src="js/init.js"></script> <!-- Placer init.js en dernier garantit que les autres modules sont chargés -->
-
+    <script src="js/init.js"></script>
 </body>
 </html>
