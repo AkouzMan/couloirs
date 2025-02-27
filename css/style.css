@@ -13,6 +13,13 @@ body {
     font-family: Arial, sans-serif;
 }
 
+html, body {
+    overflow-x: hidden; /* Empêche le défilement horizontal */
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
 /* Configuration de la carte */
 #map {
     width: 100%;
@@ -81,6 +88,18 @@ body {
     left: -300px;
 }
 
+#infoPanelRight {
+    position: fixed;
+    top: 0;
+    right: -300px; /* Positionné hors de l'écran par défaut */
+    width: 300px;
+    height: 100%;
+    background-color: #fff;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+    overflow-y: auto;
+    z-index: 1000;
+    transition: right 0.3s ease-in-out;
+}
 
 /* Titre du panneau gauche */
 #panelLeftTitre, #panelRightTitre {
@@ -151,52 +170,66 @@ body {
 #loginContainer {
     position: absolute;
     top: 10px;
-    right: 10px;
+    right: 5px;
     z-index: 1000;
     display: flex;
     flex-direction: column; /* Organiser les éléments verticalement */
-    align-items: center;
-    transition: right 0.3s ease-in-out;
+    align-items: flex-end; /* Aligner à droite */
+    transition: right 0.3s ease-in-out; /* Animation de transition */
+    gap: 5px; /* Espacement entre les éléments */
 }
 
-/* Position du bouton quand le panneau droit est ouvert */
+/* Position du conteneur de login quand le panneau droit est ouvert */
+#infoPanelRight[data-is-open="true"] ~ #loginContainer,
 body.panel-right-open #loginContainer {
-    right: 340px; /* Ajustez cette valeur selon la largeur de votre panneau droit */
+    right: 305px; /* Décaler à gauche quand le panneau est visible */
 }
 
-/* Style pour un bouton plus discret */
+/* Style pour un bouton plus visible */
 #loginBtn {
-    padding: 5px 10px;
-    font-size: 0.8rem;
-    background-color: rgba(140, 140, 140, 0.7);
-    border: 1px solid rgba(0, 0, 0, 0.2);
+    padding: 6px 12px; /* Padding réduit pour être plus discret */
+    font-size: 0.8rem; /* Texte plus petit */
+    background-color: rgba(120, 120, 120, 0.7); /* Gris plus clair et translucide */
+    border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 4px;
     cursor: pointer;
-    opacity: 0.8;
-    transition: opacity 0.2s ease;
-    position: fixed;
+    opacity: 0.8; /* Légèrement transparent */
+    transition: all 0.2s ease;
+    position: static; /* Pas de position fixée pour s'adapter au conteneur flex */
     z-index: 1000;
-    transition: right 0.3s ease-in-out;
-    margin-bottom: 3px; /* Espace entre le bouton et le texte de statut */
+    margin-bottom: 0;
+    color: white;
+    font-weight: normal; /* Moins prononcé */
+    width: 120px; /* Largeur fixe pour tous les boutons */
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    margin-right: 10px; /* Marge pour éviter le bord de l'écran */
 }
 
 #loginBtn:hover {
     opacity: 1;
-    background-color: rgba(74, 74, 74, 0.9);
+    background-color: rgba(100, 100, 100, 0.9);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 #userStatus {
     color: #333;
-    font-size: 0.7rem; /* Texte plus petit */
+    font-size: 0.8rem; /* Texte plus petit */
     text-align: center; /* Centrer le texte */
-    margin-top: 32px; /* Espace entre le bouton et le texte */
-    background-color: rgba(255, 255, 255, 0.7); /* Fond semi-transparent */
-    padding: 2px 4px; /* Petit padding */
+    margin-top: 1px; /* Espace entre le bouton et le texte */
+    background-color: rgba(255, 255, 255, 0.8); /* Fond semi-transparent */
+    padding: 4px 8px; /* Petit padding */
     border-radius: 3px; /* Coins arrondis */
     max-width: 200px; /* Limiter la largeur */
     white-space: nowrap; /* Empêcher le retour à la ligne */
     overflow: hidden; /* Cacher le débordement */
     text-overflow: ellipsis; /* Ajouter des points de suspension si trop long */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-right: 10px; /* Marge pour éviter le bord de l'écran */
+    order: -1; /* Le place en premier dans le conteneur flex */
+    margin-bottom: 5px; /* Espace en dessous du statut */
+    min-width: 120px; /* Même largeur que les boutons */
 }
 
 .modal {
@@ -459,26 +492,31 @@ body.interacting #map {
 
 /* Style pour le bouton d'ajout de couloir */
 #addCouloirBtn {
-    padding: 5px 10px;
-    font-size: 0.8rem;
-    background-color: rgba(52, 152, 219, 0.85);
-    border: 1px solid rgba(41, 128, 185, 0.3);
+    padding: 6px 12px; /* Padding réduit pour être plus discret */
+    font-size: 0.8rem; /* Texte plus petit */
+    background-color: rgba(52, 152, 219, 0.7); /* Bleu plus clair et translucide */
+    border: 1px solid rgba(41, 128, 185, 0.2);
     border-radius: 4px;
     color: white;
     cursor: pointer;
-    opacity: 0.9;
+    opacity: 0.8; /* Légèrement transparent */
     transition: all 0.2s ease;
-    position: fixed;
+    position: static; /* Permet au conteneur de gérer sa position */
     z-index: 1000;
-    top: 40px;
-    right: 10px;
-    margin-top: 5px;
+    margin-top: 5px; /* Espace au-dessus du bouton */
+    font-weight: normal; /* Moins prononcé */
+    width: 120px; /* Largeur fixe pour tous les boutons */
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    margin-right: 10px; /* Marge pour éviter le bord de l'écran */
+    top: auto; /* Supprimer le positionnement absolu */
 }
 
 #addCouloirBtn:hover {
-    background-color: rgba(41, 128, 185, 1);
+    background-color: rgba(41, 128, 185, 0.9);
     opacity: 1;
-    transform: scale(1.05);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Style pour le formulaire d'ajout de couloir */

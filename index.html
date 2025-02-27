@@ -18,10 +18,10 @@
         <strong>Prochaine émission :</strong> <span id="nextEmission">Chargement...</span>
     </div>
 
-    <!-- Conteneur pour les boutons de connexion/ajout -->
+    <!-- Conteneur pour les boutons de connexion/ajout avec ordre réorganisé - Suppression du bouton logout redondant -->
     <div id="loginContainer">
-        <button id="loginBtn">Connexion</button>
-        <span id="userStatus" class="auth-required"></span>
+        <div id="userStatus" class="auth-required"></div>
+        <button id="loginBtn" class="auth-toggle">Connexion</button>
         <button id="addCouloirBtn" class="auth-required">+ Ajouter un couloir</button>
     </div>
 
@@ -60,7 +60,7 @@
         <p><strong>Altitude :</strong> <span id="panelRightAltitude"></span></p>
         <p><strong>Commentaire :</strong> <span id="panelRightComment"></span></p>
         <p><strong>Lien :</strong> <a id="panelRightLien" href="#" target="_blank">Topo</a></p>
-        <p class="couloir-author"><em>Couloir ajouté par : <span id="panelRightAuthor"></span></em></p>
+        <p class="couloir-author"><em>Couloir ajouté par <span id="panelRightAuthor"></span></em></p>
         <div class="panel-actions auth-required">
             <div class="button-group">
                 <button id="editCouloirBtn" class="edit-btn action-button">Modifier</button>

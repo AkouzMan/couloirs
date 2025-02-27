@@ -240,6 +240,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Supprimer la fonction initAuthUI qui gère le bouton de déconnexion supprimé
+    // Cette fonction n'est plus nécessaire car nous n'utilisons qu'un seul bouton qui toggle
+
     // Créer un objet authModule pour encapsuler les fonctions d'authentification
     window.authModule = {
         // Fonctions et propriétés d'authentification

@@ -1,4 +1,3 @@
-
 /**
  * Module de chargement des données de test
  */
@@ -69,3 +68,43 @@ const DataLoader = (function() {
 
 // Exposer le module globalement
 window.DataLoader = DataLoader;
+
+/**
+ * Met à jour les indicateurs de validité du bulletin d'avalanche
+ * @param {string} validityText - Le texte à afficher pour la validité
+ * @param {string} nextEmissionText - Le texte à afficher pour la prochaine émission
+ * @param {boolean} isLoading - Indique si les données sont en cours de chargement
+ * @param {boolean} isError - Indique s'il y a eu une erreur
+ */
+function updateBulletinStatus(validityText, nextEmissionText, isLoading = false, isError = false) {
+    const validityElement = document.getElementById('bulletinValidity');
+    const nextEmissionElement = document.getElementById('nextEmission');
+    
+    if (!validityElement || !nextEmissionElement) return;
+    
+    // Appliquer des styles selon l'état
+    if (isLoading) {
+        validityElement.innerHTML = '<em>Chargement...</em>';
+        nextEmissionElement.innerHTML = '<em>Chargement...</em>';
+        
+        validityElement.style.color = '#666';
+        nextEmissionElement.style.color = '#666';
+    } else if (isError) {
+        validityElement.textContent = validityText || 'Données non disponibles';
+        nextEmissionElement.textContent = nextEmissionText || 'Données non disponibles';
+        
+        validityElement.style.color = '#e74c3c';
+        nextEmissionElement.style.color = '#e74c3c';
+    } else {
+        validityElement.textContent = validityText;
+        nextEmissionElement.textContent = nextEmissionText;
+        
+        validityElement.style.color = '';
+        nextEmissionElement.style.color = '';
+    }
+}
+
+// Lors du chargement initial, indiquer que les données sont en cours de chargement
+document.addEventListener('DOMContentLoaded', function() {
+    updateBulletinStatus(null, null, true);
+});

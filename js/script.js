@@ -14,6 +14,36 @@ document.addEventListener('DOMContentLoaded', function() {
         window.mapInitialized = true;
         initializeApplication();
     }
+    
+    // S'assurer que le panneau droit est initialement hors de l'écran
+    const infoPanelRight = document.getElementById('infoPanelRight');
+    if (infoPanelRight) {
+        infoPanelRight.style.right = '-300px';
+        infoPanelRight.style.display = 'block';
+        infoPanelRight.dataset.isOpen = 'false';
+    }
+    
+    // Empêcher le défilement au-delà des limites
+    document.documentElement.style.overflowX = 'hidden';
+    document.body.style.overflowX = 'hidden';
+
+    // Vérifier s'il y a des boutons d'ajout en double
+    const checkForDuplicates = function() {
+        // Vérifier les boutons d'ajout de couloir en double
+        const addButtons = document.querySelectorAll('#addCouloirBtn');
+        if (addButtons.length > 1) {
+            console.warn("Détection de boutons d'ajout en double, suppression des doublons");
+            // Garder uniquement le premier bouton et supprimer les autres
+            for (let i = 1; i < addButtons.length; i++) {
+                if (addButtons[i] && addButtons[i].parentNode) {
+                    addButtons[i].parentNode.removeChild(addButtons[i]);
+                }
+            }
+        }
+    };
+    
+    // Exécuter la vérification après un court délai
+    setTimeout(checkForDuplicates, 500);
 });
 
 function initializeApplication() {
@@ -176,6 +206,9 @@ async function fetchAvalancheData() {
         // Mettre à jour la date du bulletin
         updateBulletinInfo(data);
 
+        console.log("📊 Données brutes du bulletin d'avalanche:", data);
+
+
         data.features.forEach(feature => {
             const properties = feature.properties;
             const geometry = feature.geometry;
@@ -280,21 +313,59 @@ async function fetchAvalancheData() {
     }
 }
 
-// Fonction pour mettre à jour la date du bulletin
+// Fonction pour mettre à jour la date du bulletin - version améliorée avec publicationTime et nextUpdate
 function updateBulletinInfo(data) {
-    if (data && data.validTime) {
-        const validFrom = new Date(data.validTime.startTime);
-        const validTo = new Date(data.validTime.endTime);
+    try {
+        // Vérifie si les données principales sont disponibles
+        if (!data || !data.features || !data.features.length) {
+            console.warn("Données de bulletin incomplètes ou invalides");
+            document.getElementById('bulletinValidity').textContent = "Données non disponibles";
+            document.getElementById('nextEmission').textContent = "Données non disponibles";
+            return;
+        }
+
+        // Récupère les propriétés du premier feature qui contient les infos du bulletin
+        const properties = data.features[0].properties;
         
-        document.getElementById('bulletinValidity').textContent = 
-            `${validFrom.toLocaleDateString('fr-FR')} au ${validTo.toLocaleDateString('fr-FR')}`;
+        // Récupère la date de publication et la date de prochaine mise à jour
+        const publicationTime = properties.publicationTime ? new Date(properties.publicationTime) : null;
+        const nextUpdate = properties.nextUpdate ? new Date(properties.nextUpdate) : null;
         
-        // Calculer la prochaine émission
-        const nextEmission = new Date(validTo);
-        nextEmission.setDate(nextEmission.getDate() + 1);
+        console.log("Publication time:", publicationTime);
+        console.log("Next update:", nextUpdate);
         
-        document.getElementById('nextEmission').textContent = 
-            `${nextEmission.toLocaleDateString('fr-FR')}`;
+        // Options de formatage pour les dates en français - avec heure mais sans secondes
+        const dateOptions = { 
+            weekday: 'long',
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Europe/Paris'
+        };
+        
+        // Met à jour les éléments du DOM avec les dates formatées
+        const validityElement = document.getElementById('bulletinValidity');
+        if (validityElement && publicationTime && !isNaN(publicationTime)) {
+            validityElement.textContent = publicationTime.toLocaleDateString('fr-FR', dateOptions);
+        } else {
+            validityElement.textContent = "Date non disponible";
+        }
+        
+        const nextEmissionElement = document.getElementById('nextEmission');
+        if (nextEmissionElement && nextUpdate && !isNaN(nextUpdate)) {
+            nextEmissionElement.textContent = nextUpdate.toLocaleDateString('fr-FR', dateOptions);
+        } else {
+            nextEmissionElement.textContent = "Date non disponible";
+        }
+        
+        console.log("Informations du bulletin mises à jour avec succès");
+    } catch (error) {
+        console.error("Erreur lors de la mise à jour des informations du bulletin:", error);
+        // En cas d'erreur, mettre un texte par défaut
+        document.getElementById('bulletinValidity').textContent = "Date non disponible";
+        document.getElementById('nextEmission').textContent = "Date non disponible";
     }
 }
 
@@ -332,14 +403,12 @@ var infoPanelRight = document.getElementById('infoPanelRight');
 var closePanelRight = document.getElementById('closePanelRight');
 var closePanelLeft = document.getElementById('closePanelLeft');
 
-// Fonction d'affichage du panneau droit
+// Fonction d'affichage du panneau droit - modifiée pour utiliser data-is-open
 function showRightPanel(couloirId, name, lat, lon, pointExposition, altitudeMax, altitudeMin, pente, cotationSki, expositionSki, commentaire, lien, dangerCalc, dangerSub, pointColor, user) {
     if (!infoPanelRight) return;
     
     // Stocker l'ID du couloir actuel
     currentCouloirId = couloirId;
-    
-    const loginBtn = document.getElementById('loginBtn');
     
     // Gestion de l'altitude
     let altitude = altitudeMin === ''
@@ -387,19 +456,20 @@ function showRightPanel(couloirId, name, lat, lon, pointExposition, altitudeMax,
             document.getElementById('panelRightTitre').style.backgroundColor = pointColor;
         }
         
+        // Permettre le défilement horizontal lors de l'affichage du panneau
+        document.documentElement.style.overflowX = 'auto'; 
+        document.body.style.overflowX = 'auto';
+        
         // Affichage du panneau avec animation
         infoPanelRight.style.transition = 'right 0.3s ease-in-out';
         infoPanelRight.style.right = '0';
         infoPanelRight.style.borderColor = pointColor;
         
-        // Repositionner le bouton login quand le panneau est ouvert
-        if (loginBtn) {
-            loginBtn.style.transition = 'right 0.3s ease-in-out';
-            loginBtn.style.right = '310px';
-        }
-        
         // Signal que le panneau est ouvert
         infoPanelRight.dataset.isOpen = 'true';
+        
+        // Ajouter une classe au body pour le décalage CSS des boutons
+        document.body.classList.add('panel-right-open');
         
         // Stocker les données du couloir actuel pour l'édition
         window.currentCouloirData = {
@@ -426,19 +496,22 @@ function showRightPanel(couloirId, name, lat, lon, pointExposition, altitudeMax,
 function hideRightPanel() {
     if (!infoPanelRight) return;
     
-    const loginBtn = document.getElementById('loginBtn');
-    
     infoPanelRight.style.transition = 'right 0.3s ease-in-out';
     infoPanelRight.style.right = '-300px';
     
-    // Repositionner le bouton login quand le panneau est fermé
-    if (loginBtn) {
-        loginBtn.style.transition = 'right 0.3s ease-in-out';
-        loginBtn.style.right = '10px';
-    }
-    
     // Signal que le panneau est fermé
     infoPanelRight.dataset.isOpen = 'false';
+    
+    // Supprimer la classe body qui décale les boutons
+    document.body.classList.remove('panel-right-open');
+    
+    // Assurer que le panneau reste hors de la vue et n'est pas accessible par défilement
+    setTimeout(() => {
+        if (infoPanelRight.dataset.isOpen === 'false') {
+            document.documentElement.style.overflowX = 'hidden';
+            document.body.style.overflowX = 'hidden';
+        }
+    }, 300);
 }
 
 // Fonction pour masquer le panneau gauche
