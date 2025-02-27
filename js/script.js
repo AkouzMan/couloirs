@@ -1217,6 +1217,70 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Mise à jour de la fonction pour réinitialiser la base de données avec UI
+window.resetAndReloadDatabase = async function() {
+    try {
+        // Demande de confirmation avec plus de détails
+        if (!confirm("ATTENTION: Vous êtes sur le point de réinitialiser la base de données.\n\n" +
+                   "- Tous les couloirs personnalisés seront supprimés\n" +
+                   "- Les données seront remplacées par les données de test\n" +
+                   "- Cette action est irréversible\n\n" +
+                   "Êtes-vous sûr de vouloir continuer?")) {
+            console.log("Réinitialisation annulée par l'utilisateur");
+            return;
+        }
+        
+        // Afficher une notification de chargement
+        const loadingNotification = document.createElement('div');
+        loadingNotification.className = 'notification warning';
+        loadingNotification.innerHTML = '<p>Réinitialisation de la base de données en cours...</p>';
+        document.body.appendChild(loadingNotification);
+        
+        console.log("Réinitialisation de la base de données en cours...");
+        
+        // Utiliser la nouvelle fonction de réinitialisation complète
+        await window.resetDatabaseCompletely(true);
+        
+        // Supprimer la notification de chargement
+        document.body.removeChild(loadingNotification);
+        
+        console.log("Base de données réinitialisée, rechargement des points...");
+        await fetchAndDisplayPoints();
+        console.log("Points rechargés avec succès");
+        
+        // Afficher une notification de succès
+        const successNotification = document.createElement('div');
+        successNotification.className = 'notification success';
+        successNotification.innerHTML = '<p>Base de données réinitialisée avec succès !</p>';
+        document.body.appendChild(successNotification);
+        
+        // Faire disparaître la notification après 3 secondes
+        setTimeout(() => {
+            successNotification.classList.add('fadeOut');
+            setTimeout(() => {
+                document.body.removeChild(successNotification);
+            }, 500);
+        }, 3000);
+        
+    } catch (error) {
+        console.error("Erreur lors de la réinitialisation de la base de données:", error);
+        
+        // Afficher une notification d'erreur
+        const errorNotification = document.createElement('div');
+        errorNotification.className = 'notification error';
+        errorNotification.innerHTML = '<p>Erreur lors de la réinitialisation de la base de données</p>';
+        document.body.appendChild(errorNotification);
+        
+        // Faire disparaître la notification après 5 secondes
+        setTimeout(() => {
+            errorNotification.classList.add('fadeOut');
+            setTimeout(() => {
+                document.body.removeChild(errorNotification);
+            }, 500);
+        }, 5000);
+    }
+};
+
 // Ajouter une fonction spéciale pour réinitialiser la base de données
 window.resetAndReloadDatabase = async function() {
     try {

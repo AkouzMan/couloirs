@@ -184,29 +184,30 @@ async function addCouloir(couloir) {
 
 // Insert test data into the database
 async function insertTestData() {
-    const testData = [
-        { nom: "Couloir E du Portalet", latitude: 46.007, longitude: 7.042, exposition: "E", altitude_max: 3344, altitude_min: 2344, pente: 43, cotation_ski: "4.3", exposition_ski: "E2", commentaire: "", lien: "https://www.camptocamp.org/routes/160967/fr/le-portalet-couloir-e", user: "..." },
-        { nom: "Couloir de Bel Oiseau", latitude: 46.062, longitude: 6.929, exposition: "NE", altitude_max: 2525, altitude_min: 1725, pente: 43, cotation_ski: "4.3", exposition_ski: "E2", commentaire: "", lien: "https://www.camptocamp.org/routes/115525/fr/bel-oiseau-couloir-ene", user: "..." },
-        { nom: "L'aile et la rampe de la colombe", latitude: 46.168, longitude: 6.749, exposition: "NE", altitude_max: 2406, altitude_min: 1806, pente: 42, cotation_ski: "4.2", exposition_ski: "E2", commentaire: "", lien: "https://www.camptocamp.org/routes/732886/fr/tete-de-bossetan-bostan-l-aile-de-la-colombe", user: "..." },
-        { nom: "Rampe des chamois", latitude: 46.168, longitude: 6.749, exposition: "N", altitude_max: 2406, altitude_min: 1706, pente: 43, cotation_ski: "4.3", exposition_ski: "E3", commentaire: "", lien: "https://www.camptocamp.org/routes/732887/fr/tete-de-bossetan-bostan-rampe-des-chamois", user: "..." },
-        { nom: "Couloirs du Bürglen", latitude: 46.875, longitude: 8.628, exposition: "S", altitude_max: 2165, altitude_min: 1665, pente: 41, cotation_ski: "4.1", exposition_ski: "E1", commentaire: "", lien: "https://www.camptocamp.org/routes/47398/fr/burglen-couloirs-ne", user: "..." },
-        { nom: "Couloir de la Table (Aiguille du Tour)", latitude: 45.983, longitude: 7.005, exposition: "S", altitude_max: 3540, altitude_min: 2940, pente: 43, cotation_ski: "4.3", exposition_ski: "E2", commentaire: "", lien: "https://www.camptocamp.org/routes/46737/fr/aiguille-du-tour-couloir-de-la-table", user: "..." },
-        { nom: "Couloir Copt", latitude: 45.976, longitude: 7.002, exposition: "N", altitude_max: 3680, altitude_min: 2980, pente: 51, cotation_ski: "5.1", exposition_ski: "E2", commentaire: "Rappel nécessaire", lien: "https://www.camptocamp.org/routes/56242/fr/aiguille-sans-nom-dorees-couloir-copt", user: "..." },
-        { nom: "Couloir Annibal", latitude: 45.923, longitude: 7.208, exposition: "W", altitude_max: 3730, altitude_min: 2930, pente: 43, cotation_ski: "4.3", exposition_ski: "E2", commentaire: "", lien: "https://www.camptocamp.org/routes/45518/fr/mont-velan-couloir-d-annibal", user: "..." },
-        { nom: "Génépi", latitude: 46.013, longitude: 7.052, exposition: "NE", altitude_max: 2880, altitude_min: 2280, pente: 42, cotation_ski: "4.2", exposition_ski: "E2", commentaire: "", lien: "https://www.camptocamp.org/routes/45232/fr/le-genepi-arpette-couloir-ne-depuis-le-plan-de-l-au", user: "..." },
-        { nom: "Couloirs W du Petit Combin", latitude: 45.998, longitude: 7.317, exposition: "W", altitude_max: 3663, altitude_min: 3063, pente: 42, cotation_ski: "4.2", exposition_ski: "E2", commentaire: "", lien: "https://www.camptocamp.org/routes/46038/fr/petit-combin-couloir-w-par-le-glacier-pendant", user: "..." },
-        { nom: "Couloir ENE de Barme", latitude: 46.155, longitude: 6.835, exposition: "NE", altitude_max: 2685, altitude_min: 2085, pente: 52, cotation_ski: "5.2", exposition_ski: "E3", commentaire: "", lien: "https://www.camptocamp.org/routes/53598/fr/dents-blanches-dent-de-barme-couloirs-ene", user: "..." },
-        { nom: "Couloir de la Tsa", latitude: 45.984, longitude: 7.579, exposition: "W", altitude_max: 3668, altitude_min: 2868, pente: 51, cotation_ski: "5.1", exposition_ski: "E2", commentaire: "", lien: "https://www.camptocamp.org/routes/49377/fr/aiguille-de-la-tsa-couloirs-w", user: "..." },
-        { nom: "Grand Golliat", latitude: 45.865, longitude: 7.185, exposition: "NE", altitude_max: 3238, altitude_min: 2638, pente: 42, cotation_ski: "4.2", exposition_ski: "E2", commentaire: "Partie sommitale en mode crapahutage pas facile (Labande 20.)", lien: "https://www.camptocamp.org/routes/45770/fr/grand-golliat-couloir-ne", user: "..." },
-        { nom: "Mont de la Gouille", latitude: 46.019, longitude: 7.423, exposition: "NE", altitude_max: 3212, altitude_min: 2412, pente: 43, cotation_ski: "4.3", exposition_ski: "E2", commentaire: "Longue approche, remontée dans le couloir", lien: "https://www.camptocamp.org/routes/1172007/fr/mont-de-la-gouille-couloir-ne", user: "..." },
-        { nom: "Couloir N de la Pointe des Savolaires", latitude: 46.274, longitude: 7.056, exposition: "NW", altitude_max: 2980, altitude_min: 2380, pente: 33, cotation_ski: "3.3", exposition_ski: "E2", commentaire: "", lien: "https://www.camptocamp.org/routes/45922/fr/pointe-des-savolaires-couloir-n", user: "..." },
-        { nom: "Couloir NW de la Pointe de Pré Fleuri", latitude: 46.201, longitude: 7.059, exposition: "NW", altitude_max: 3310, altitude_min: 2710, pente: 41, cotation_ski: "4.1", exposition_ski: "E2", commentaire: "", lien: "https://www.camptocamp.org/routes/147513/fr/pointe-de-pre-fleuri-couloir-nw", user: "..." }
-    ];
-    
     try {
+        let testData;
+        
+        try {
+            // Essayer de charger les données depuis le fichier JSON
+            testData = await window.DataLoader.loadTestCouloirs();
+            console.log(`${testData.length} couloirs chargés depuis le fichier JSON`);
+        } catch (loadError) {
+            console.error("Erreur lors du chargement des données depuis le fichier JSON:", loadError);
+            console.warn("Utilisation des données de secours intégrées");
+            
+            // Données de secours (fallback) au cas où le chargement échoue
+            testData = [
+                { nom: "Couloir E du Portalet", latitude: 46.007, longitude: 7.042, exposition: "E", altitude_max: 3344, altitude_min: 2344, pente: 43, cotation_ski: "4.3", exposition_ski: "E2", commentaire: "", lien: "https://www.camptocamp.org/routes/160967/fr/le-portalet-couloir-e", user: "admin" },
+                { nom: "Couloir de Bel Oiseau", latitude: 46.062, longitude: 6.929, exposition: "NE", altitude_max: 2525, altitude_min: 1725, pente: 43, cotation_ski: "4.3", exposition_ski: "E2", commentaire: "", lien: "https://www.camptocamp.org/routes/115525/fr/bel-oiseau-couloir-ene", user: "demo" }
+                // Données minimales de secours
+            ];
+        }
+        
+        // Insérer les données dans la base
         for (const couloir of testData) {
             await addCouloir(couloir);
         }
+        
         console.log(`${testData.length} couloirs insérés avec succès`);
         return true;
     } catch (error) {
@@ -371,43 +372,7 @@ async function deleteCouloir(id) {
 
 // Fonction pour réinitialiser la base de données
 async function resetDatabase() {
-    try {
-        // Ouvrir la base de données
-        const db = await openDatabase();
-        
-        // Supprimer toutes les données existantes
-        return new Promise((resolve, reject) => {
-            // Supprimer la base de données entièrement
-            const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
-            
-            deleteRequest.onsuccess = function() {
-                console.log("Base de données supprimée avec succès");
-                
-                // Réinitialiser la variable dbPromise
-                dbPromise = null;
-                
-                // Ouvrir à nouveau la base de données et initialiser
-                setTimeout(async () => {
-                    try {
-                        await initDatabase();
-                        console.log("Base de données réinitialisée avec succès");
-                        resolve(true);
-                    } catch (error) {
-                        console.error("Erreur lors de la réinitialisation de la base de données:", error);
-                        reject(error);
-                    }
-                }, 500);
-            };
-            
-            deleteRequest.onerror = function(event) {
-                console.error("Erreur lors de la suppression de la base de données:", event.target.error);
-                reject(event.target.error);
-            };
-        });
-    } catch (error) {
-        console.error("Erreur lors de la réinitialisation de la base de données:", error);
-        throw error;
-    }
+    return resetDatabaseCompletely(true); // Passer un argument pour éviter la confirmation
 }
 
 // Système de synchronisation entre fenêtres
@@ -454,7 +419,25 @@ function setupDatabaseSyncListeners() {
 // Gestion des synchronisations de base de données
 function handleDatabaseSync(syncData) {
     console.log("Notification de mise à jour de la base de données reçue:", syncData);
-    // Recharger les points sur la carte
+    
+    // Si c'est une réinitialisation complète, rafraîchir la page
+    if (syncData.operation === "reset") {
+        console.log("Réinitialisation de la base de données détectée dans une autre fenêtre, rechargement de la page...");
+        // Afficher une notification avant de rafraîchir
+        const notification = document.createElement('div');
+        notification.className = 'notification warning';
+        notification.innerHTML = '<p>La base de données a été réinitialisée dans une autre fenêtre. Rechargement de la page...</p>';
+        document.body.appendChild(notification);
+        
+        // Attendre 2 secondes avant de rafraîchir pour que l'utilisateur puisse voir la notification
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+        
+        return;
+    }
+    
+    // Sinon, simplement recharger les points
     if (window.fetchAndDisplayPoints && typeof window.fetchAndDisplayPoints === 'function') {
         window.fetchAndDisplayPoints().catch(error => {
             console.error("Erreur lors du rechargement des points suite à une mise à jour de la base de données:", error);
@@ -608,35 +591,68 @@ window.dbAuth = {
     hashPassword
 };
 
-// Fonction pour supprimer complètement la base de données et la recréer
+/**
+ * Fonction de réinitialisation complète de la base de données
+ * Prend maintenant en compte le chargeur de données externe
+ */
 async function resetDatabaseCompletely() {
     try {
-        // Fermer toute connexion existante
+        // Confirmation de l'utilisateur (si appelé directement via console)
+        if (arguments.length === 0 && !confirm("Êtes-vous sûr de vouloir réinitialiser complètement la base de données?")) {
+            console.log("Réinitialisation annulée par l'utilisateur");
+            return false;
+        }
+        
+        console.log("Début de la réinitialisation complète de la base de données...");
+        
+        // 1. Fermer toute connexion existante
         if (dbPromise) {
-            const db = await dbPromise;
-            db.close();
+            try {
+                const db = await dbPromise;
+                db.close();
+                console.log("Connexion à la base de données fermée");
+            } catch(e) {
+                console.warn("Impossible de fermer proprement la connexion existante:", e);
+            }
             dbPromise = null;
         }
         
-        // Supprimer la base de données
+        // 2. Réinitialiser le cache du chargeur de données
+        if (window.DataLoader && typeof window.DataLoader.resetCache === 'function') {
+            window.DataLoader.resetCache();
+            console.log("Cache du chargeur de données réinitialisé");
+        }
+        
+        // 3. Supprimer la base de données
         return new Promise((resolve, reject) => {
+            console.log("Suppression de la base de données...");
             const request = indexedDB.deleteDatabase(DB_NAME);
             
             request.onsuccess = function() {
                 console.log("Base de données supprimée avec succès");
                 
-                // Réinitialiser puis réouvrir
+                // 4. Recréer la base de données avec un délai pour s'assurer que la suppression est complète
                 setTimeout(async () => {
                     try {
-                        await openDatabase(); // Rouvre la base de données
-                        await initDatabase(); // Réinitialise les données
-                        console.log("Base de données entièrement réinitialisée");
+                        // 5. Rouvrir la base de données (crée la structure)
+                        console.log("Réouverture de la base de données...");
+                        await openDatabase();
+                        
+                        // 6. Réinitialiser les données
+                        console.log("Réinitialisation des données...");
+                        await initDatabase();
+                        
+                        console.log("Base de données entièrement réinitialisée avec succès");
+                        
+                        // 7. Notifier les autres fenêtres de la réinitialisation
+                        notifyDatabaseChange("reset", { timestamp: Date.now() });
+                        
                         resolve(true);
                     } catch (error) {
                         console.error("Erreur lors de la réinitialisation de la base de données:", error);
                         reject(error);
                     }
-                }, 500);
+                }, 500); // Délai de 500ms pour s'assurer que la suppression est complète
             };
             
             request.onerror = function(event) {
@@ -645,8 +661,9 @@ async function resetDatabaseCompletely() {
             };
             
             request.onblocked = function() {
-                console.warn("La suppression de la base de données est bloquée");
-                alert("Veuillez fermer tous les autres onglets utilisant cette application");
+                const message = "La suppression de la base de données est bloquée. Veuillez fermer tous les autres onglets utilisant cette application.";
+                console.warn(message);
+                alert(message);
             };
         });
     } catch (error) {
@@ -655,5 +672,6 @@ async function resetDatabaseCompletely() {
     }
 }
 
-// Exposer la fonction pour un reset complet
+// Exposer les fonctions globalement
+window.resetDatabase = resetDatabase;
 window.resetDatabaseCompletely = resetDatabaseCompletely;
