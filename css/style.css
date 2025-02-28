@@ -1,20 +1,73 @@
+/* Variables globales pour faciliter la maintenance */
 :root {
-    --gray-color: #848484;
+    /* Couleurs */
+    --color-text: #333;
+    --color-text-light: #666;
+    --color-text-secondary: #848484;
+    --color-background: #fff;
+    --color-background-light: rgba(255, 255, 255, 0.9);
+    --color-background-translucent: rgba(200, 200, 200, 0.7);
+    --color-border: #ddd;
+    --color-shadow: rgba(0, 0, 0, 0.2);
+    --color-hover: rgba(0, 0, 0, 0.05);
+    
+    /* Tailles et espacements */
     --panel-width: 300px;
-    --background-light: rgba(255, 255, 255, 0.9);
-    --background-translucent: rgba(200, 200, 200, 0.7);
+    --panel-padding: 15px;
+    --button-width: 120px;
+    --button-spacing: 5px;
+    --controls-offset: 40px;
+    --controls-with-panel: calc(var(--panel-width) + 40px);
+    
+    /* Position latérale des boutons quand le panneau est ouvert */
+    --right-panel-open-offset: calc(var(--panel-width) + 5px);
+    
+    /* Transitions */
     --transition-time: 0.3s;
+    --transition-easing: ease-in-out;
+    
+    /* Z-index */
+    --z-map: 1;
+    --z-banner: 200;     /* Bandeau en bas de la pile d'UI, juste au-dessus de la carte */
+    --z-regions: 300;    /* Régions et marqueurs au-dessus du bandeau */
+    --z-controls: 950;   /* Contrôles de carte (zoom, etc.) augmenté pour être au-dessus du bandeau */
+    --z-panels-left: 1000;   /* Panneau gauche */
+    --z-panels-right: 1100;  /* Panneau droit avec z-index supérieur au panneau gauche */
+    --z-buttons: 1200;   /* Boutons de login/ajout au-dessus des panneaux */
+    --z-modal: 2000;     /* Modales par-dessus tout */
+    --z-notification: 9999; /* Notifications toujours au premier plan */
+    
+    /* Couleurs des niveaux de danger */
+    --color-danger-1: #CCFF66; /* Faible */
+    --color-danger-2: #FFFF00; /* Modéré */
+    --color-danger-3: #FF9900; /* Considérable */
+    --color-danger-4: #FF0000; /* Élevé */
+    --color-danger-5: #800000; /* Très élevé */
+    
+    /* Couleurs des boutons */
+    --color-button-login: rgba(120, 120, 120, 0.7);
+    --color-button-login-hover: rgba(100, 100, 100, 0.9);
+    --color-button-add: rgba(52, 152, 219, 0.7);
+    --color-button-add-hover: rgba(41, 128, 185, 0.9);
+    --color-button-primary: #3498db;
+    --color-button-primary-hover: #2980b9;
+    --color-button-danger: #e74c3c;
+    --color-button-danger-hover: #c0392b;
+    --color-button-cancel: #95a5a6;
+    --color-button-cancel-hover: #7f8c8d;
+    
+    /* Arrondis */
+    --border-radius-sm: 3px;
+    --border-radius-md: 4px;
+    --border-radius-lg: 8px;
 }
 
-/* Reset de marges et de padding pour le body */
-body {
+/* Reset de base */
+html, body {
     margin: 0;
     padding: 0;
     font-family: Arial, sans-serif;
-}
-
-html, body {
-    overflow-x: hidden; /* Empêche le défilement horizontal */
+    overflow-x: hidden;
     position: relative;
     width: 100%;
     height: 100%;
@@ -25,136 +78,54 @@ html, body {
     width: 100%;
     height: 100vh;
     outline: none;
+    z-index: var(--z-map);
 }
 
-/* Contrôles de zoom (position absolue avec animation) */
-.leaflet-control-zoom {
-    position: absolute !important;
-    left: 40px; /* Position par défaut */
-    transition: left 0.3s ease-in-out; /* Animation fluide */
-}
-
-/* Bandeau gris clair translucide */
+/* Bandeau d'information */
 #infoBanner {
-    background-color: var(--background-translucent);
-    color: black;
+    background-color: var(--color-background-translucent);
+    color: var(--color-text);
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
-    padding: 10px;
+    padding: 5px 10px; /* Réduction de la hauteur en diminuant le padding */
     text-align: center;
-    font-size: 16px;
-    z-index: 999;
+    font-size: 14px; /* Texte légèrement plus petit */
+    z-index: var(--z-banner);
+    padding-top: 10px; /* Réduction du padding supérieur */
+    line-height: 1.2; /* Réduire l'espacement des lignes */
 }
 
-/* Panneau latéral gauche */
-#infoPanelLeft, #infoPanelRight {
-    position: absolute;
-    top: 0;
-    width: var(--panel-width);
-    height: 100vh;
-    background-color: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-    padding: 15px;
-    font-size: 16px;
-    border: 3px solid transparent;
-    border-radius: 8px;
-    transition: left 0.3s ease-in-out, right 0.3s ease-in-out, transform 0.3s ease-in-out, box-shadow 0.3s ease;
-    z-index: 1001;
-    overflow-y: auto;
-    box-sizing: border-box;
-    user-select: text;
+/* Contrôles de zoom */
+.leaflet-control-zoom {
+    position: absolute !important;
+    left: var(--controls-offset);
+    transition: left var(--transition-time) var(--transition-easing);
+    z-index: var(--z-controls) !important; /* Augmenté et important pour surpasser les styles Leaflet */
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2); /* Ombre pour se démarquer du bandeau */
+    top: 45px; /* Décalage de 5px depuis la position par défaut (40px du haut) */
 }
 
-#infoPanelLeft {
-    transition: left 0.3s ease-in-out;
-}
-
-#infoPanelRight {
-    transition: right 0.3s ease-in-out;
-}
-
-#infoPanelLeft:hover, #infoPanelRight:hover {
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-}
-
-/* Panneau latéral droit */
-#infoPanelRight {
-    right: -300px;
-}
-
-#infoPanelLeft {
-    left: -300px;
-}
-
-#infoPanelRight {
-    position: fixed;
-    top: 0;
-    right: -300px; /* Positionné hors de l'écran par défaut */
-    width: 300px;
-    height: 100%;
-    background-color: #fff;
-    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
-    overflow-y: auto;
-    z-index: 1000;
-    transition: right 0.3s ease-in-out;
-}
-
-/* Titre du panneau gauche */
-#panelLeftTitre, #panelRightTitre {
-    padding: 10px;
-    text-align: center;
-    border-radius: 8px;
-    color: #333;
-    margin-bottom: 15px;
-    font-weight: bold;
-    transition: background-color 0.3s ease;
-}
-
-#infoPanelLeft h1, #infoPanelRight h1 {
-    font-size: 20px;
-    margin: 0 0 10px;
-    color: black;
-}
-
-#infoPanelLeft h2, #infoPanelRight h2 {
-    font-size: 18px;
-    margin: 0 0 10px;
-    color: #848484;
-}
-
-/* Bouton de fermeture du panneau gauche */
-#closePanelLeft, #closePanelRight {
-    background-color: transparent;
-    color: #848484;
-    border: none;
-    padding: 5px 10px;
-    cursor: pointer;
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    font-size: 14px;
-}
-
-#closePanelLeft:hover, #closePanelRight:hover {
-    color: #ff0000;
-    transform: scale(1.2);
+/* S'assurer que les autres contrôles de carte sont également au-dessus du bandeau */
+.leaflet-control-layers,
+.leaflet-control-scale,
+.leaflet-control-attribution {
+    z-index: var(--z-controls) !important; /* Augmenté et important pour surpasser les styles Leaflet */
 }
 
 /* Légende */
 #legend {
     position: absolute;
     bottom: 10px;
-    left: 40px;
+    left: var(--controls-offset);
     background-color: rgba(255, 255, 255, 0.7);
     padding: 10px;
-    border-radius: 8px;
-    z-index: 1100;
-    transition: left 0.3s ease-in-out;
+    border-radius: var(--border-radius-lg);
+    z-index: calc(var(--z-banner) + 5);
+    transition: left var(--transition-time) var(--transition-easing);
 }
 
-/* Structure de la légende */
 #legend div {
     display: flex;
     align-items: center;
@@ -166,139 +137,222 @@ html, body {
     margin-right: 5px;
 }
 
-/* Position de la légende quand le panneau gauche est ouvert */
-#loginContainer {
+/* Styles communs pour les panneaux latéraux */
+#infoPanelLeft, #infoPanelRight {
+    position: absolute;
+    top: 0;
+    width: var(--panel-width);
+    height: 100vh;
+    background-color: var(--color-background-light);
+    box-shadow: 0 0 10px var(--color-shadow);
+    padding: var(--panel-padding);
+    font-size: 16px;
+    border: 3px solid transparent;
+    border-radius: var(--border-radius-lg);
+    overflow-y: auto;
+    box-sizing: border-box;
+    user-select: text;
+    transition: left var(--transition-time) var(--transition-easing), 
+                right var(--transition-time) var(--transition-easing), 
+                box-shadow var(--transition-time) ease;
+}
+
+#infoPanelLeft {
+    left: calc(-1 * var(--panel-width) - var(--panel-padding) * 2);
+    z-index: var(--z-panels-left);
+}
+
+#infoPanelRight {
+    right: calc(-1 * var(--panel-width) - var(--panel-padding) * 2);
+    z-index: var(--z-panels-right);
+}
+
+#infoPanelLeft:hover, #infoPanelRight:hover {
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
+/* Titres des panneaux */
+#panelLeftTitre, #panelRightTitre {
+    padding: 10px;
+    text-align: center;
+    border-radius: var(--border-radius-lg);
+    color: var(--color-text);
+    margin-bottom: 15px;
+    font-weight: bold;
+    transition: background-color var(--transition-time) ease;
+}
+
+/* Styles des titres et sous-titres dans les panneaux */
+#infoPanelLeft h1, #infoPanelRight h1 {
+    font-size: 20px;
+    margin: 0 0 10px;
+    color: var(--color-text);
+}
+
+#infoPanelLeft h2, #infoPanelRight h2 {
+    font-size: 18px;
+    margin: 0 0 10px;
+    color: var(--color-text-secondary);
+}
+
+/* Boutons de fermeture des panneaux */
+#closePanelLeft, #closePanelRight {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
     position: absolute;
     top: 10px;
+    right: 10px;
+    font-size: 14px;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+#closePanelLeft:hover, #closePanelRight:hover {
+    color: #ff0000;
+    transform: scale(1.2);
+}
+
+/* Container des boutons de connexion et d'ajout */
+#loginContainer {
+    position: absolute;
+    top: 5px; /* Position plus haute pour s'adapter au bandeau réduit */
     right: 5px;
-    z-index: 1000;
+    z-index: var(--z-buttons);
     display: flex;
-    flex-direction: column; /* Organiser les éléments verticalement */
-    align-items: flex-end; /* Aligner à droite */
-    transition: right 0.3s ease-in-out; /* Animation de transition */
-    gap: 5px; /* Espacement entre les éléments */
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--button-spacing);
+    transition: right var(--transition-time) var(--transition-easing);
 }
 
-/* Position du conteneur de login quand le panneau droit est ouvert */
-#infoPanelRight[data-is-open="true"] ~ #loginContainer,
-body.panel-right-open #loginContainer {
-    right: 305px; /* Décaler à gauche quand le panneau est visible */
+/* Position ajustée quand le panneau droit est ouvert */
+body.panel-right-open #loginContainer,
+#infoPanelRight[data-is-open="true"] ~ #loginContainer {
+    right: var(--right-panel-open-offset);
 }
 
-/* Style pour un bouton plus visible */
-#loginBtn {
-    padding: 6px 12px; /* Padding réduit pour être plus discret */
-    font-size: 0.8rem; /* Texte plus petit */
-    background-color: rgba(120, 120, 120, 0.7); /* Gris plus clair et translucide */
+/* Style commun pour les boutons du conteneur de login */
+#loginBtn, #addCouloirBtn {
+    width: var(--button-width);
+    padding: 6px 12px;
+    font-size: 0.8rem;
     border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
+    border-radius: var(--border-radius-md);
     cursor: pointer;
-    opacity: 0.8; /* Légèrement transparent */
-    transition: all 0.2s ease;
-    position: static; /* Pas de position fixée pour s'adapter au conteneur flex */
-    z-index: 1000;
-    margin-bottom: 0;
-    color: white;
-    font-weight: normal; /* Moins prononcé */
-    width: 120px; /* Largeur fixe pour tous les boutons */
+    opacity: 0.8;
     text-align: center;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-    margin-right: 10px; /* Marge pour éviter le bord de l'écran */
+    margin-right: 10px;
+    color: white;
+    font-weight: normal;
+    transition: all 0.2s ease;
+}
+
+#loginBtn {
+    background-color: var(--color-button-login);
 }
 
 #loginBtn:hover {
+    background-color: var(--color-button-login-hover);
     opacity: 1;
-    background-color: rgba(100, 100, 100, 0.9);
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+#addCouloirBtn {
+    background-color: var(--color-button-add);
+    margin-top: 5px;
+}
+
+#addCouloirBtn:hover {
+    background-color: var(--color-button-add-hover);
+    opacity: 1;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Style pour l'affichage du statut utilisateur */
 #userStatus {
-    color: #333;
-    font-size: 0.8rem; /* Texte plus petit */
-    text-align: center; /* Centrer le texte */
-    margin-top: 1px; /* Espace entre le bouton et le texte */
-    background-color: rgba(255, 255, 255, 0.8); /* Fond semi-transparent */
-    padding: 4px 8px; /* Petit padding */
-    border-radius: 3px; /* Coins arrondis */
-    max-width: 200px; /* Limiter la largeur */
-    white-space: nowrap; /* Empêcher le retour à la ligne */
-    overflow: hidden; /* Cacher le débordement */
-    text-overflow: ellipsis; /* Ajouter des points de suspension si trop long */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    margin-right: 10px; /* Marge pour éviter le bord de l'écran */
-    order: -1; /* Le place en premier dans le conteneur flex */
-    margin-bottom: 5px; /* Espace en dessous du statut */
-    min-width: 120px; /* Même largeur que les boutons */
-}
-
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 2000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.4);
-}
-
-.modal-content {
-    background-color: #fefefe;
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 300px;
-    border-radius: 5px;
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.close:hover,
-.close:focus {
-    color: black;
-    text-decoration: none;
-}
-
-.form-group {
-    margin-bottom: 15px;
-}
-
-.form-group label {
-    display: block;
+    color: var(--color-text);
+    font-size: 0.8rem;
+    text-align: center;
+    background-color: transparent; /* Plus transparent */
+    padding: 6px 10px; /* Réduction du padding horizontal pour resserrer */
+    border-radius: var(--border-radius-sm);
+    max-width: 200px;
+    min-width: var(--button-width);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /*box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);*/
     margin-bottom: 5px;
+    order: -1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    position: relative; /* Pour positionner le menu déroulant */
+    justify-content: flex-start; /* Aligner le texte à gauche */
+    width: var(--button-width);
 }
 
-.form-group input {
-    width: 100%;
-    padding: 8px;
-    box-sizing: border-box;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+#userStatus:hover {
+    background-color: rgba(255, 255, 255, 0.75); /* Plus opaque au survol */
+    opacity: 0.9;
+    transform: scale(1.03); /* Léger grossissement au survol */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); /* Ombre plus prononcée au survol */
 }
 
-.error-message {
-    color: red;
-    margin-top: 10px;
+#userStatus::before {
+    content: "";
+    display: inline-block;
+    width: 12px; /* Taille réduite */
+    height: 12px; /* Taille réduite */
+    background-image: url('/img/user.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: left center;
+    opacity: 0.75;
+    transition: opacity 0.2s ease;
+    margin-right: 1px; /* Marge très réduite */
+    flex-shrink: 0; /* Empêche l'icône de rétrécir */
+    order: -1;
 }
 
-/* Style pour masquer les éléments lorsque non connecté */
-.auth-required {
-    display: none;
+#userStatus::after {
+    content: "";
+    display: inline-block;
+    width: 12px; /* Taille réduite */
+    height: 12px; /* Taille réduite */
+    background-image: url('/img/menu.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: right center;
+    opacity: 0.75;
+    transition: opacity 0.2s ease;
+    margin-left: 1px; /* Pousse l'icône à droite */
+    flex-shrink: 0; /* Empêche l'icône de rétrécir */
+    /*right: 10px; /* Ajustement de la position */
+    position: absolute;
 }
 
-/* Améliorer la visibilité du curseur sur les éléments cliquables */
-.leaflet-interactive {
-    cursor: pointer !important;
+#userStatus.dropdown-open::after {
+    opacity: 1;
+}
+
+/* Pour assurer que le texte est bien positionné entre les icônes */
+#userStatus span {
+    flex-grow: 1;
+    text-align: center;
+    margin: 0 18px 0 5px; /* Ajustement des marges pour centrage optimal */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left; /* Alignement à gauche plutôt que centré */
 }
 
 /* Effet lors de l'ouverture et fermeture des panneaux */
@@ -313,6 +367,26 @@ body.panel-right-open #loginContainer {
     animation: panelPulse 1s ease-in-out;
 }
 
+/* Modifications quand le panneau gauche est ouvert */
+#infoPanelLeft[data-is-open="true"] {
+    left: 0;
+}
+
+#infoPanelLeft[data-is-open="true"] ~ #legend,
+#infoPanelLeft[data-is-open="true"] ~ .leaflet-control-zoom {
+    left: var(--controls-with-panel);
+}
+
+/* Styles pour les éléments interactifs de la carte */
+.leaflet-interactive {
+    cursor: pointer !important;
+}
+
+.leaflet-interactive:hover {
+    stroke-width: 3px !important;
+    stroke-opacity: 1 !important;
+}
+
 /* Style pour les popups */
 .leaflet-popup-content {
     max-height: 300px;
@@ -320,149 +394,45 @@ body.panel-right-open #loginContainer {
 }
 
 .leaflet-popup-content-wrapper {
-    border-radius: 8px;
+    border-radius: var(--border-radius-lg);
     box-shadow: 0 3px 14px rgba(0,0,0,0.4);
-    transition: all 0.3s;
+    transition: all var(--transition-time);
+    z-index: calc(var(--z-panels-left) + 1);
 }
 
-.leaflet-popup-tip {
-    transition: all 0.3s;
-}
-
-/* Indication visuelle pour les éléments interactifs de la carte */
-.leaflet-interactive:hover {
-    stroke-width: 3px !important;
-    stroke-opacity: 1 !important;
-    cursor: pointer !important;
-}
-
-/* Indiquer visuellement l'état d'interaction */
-body.interacting #map {
-    cursor: grabbing;
-}
-
-/* Styles pour le bouton de suppression */
-.danger-btn {
-    background-color: #e74c3c;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    margin-top: 15px;
-    transition: background-color 0.3s ease;
-}
-
-.danger-btn:hover {
-    background-color: #c0392b;
-}
-
-.panel-actions {
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px solid #ddd;
-    text-align: center;
+/* Styles pour les modales */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: var(--z-modal);
+    left: 0;
+    top: 0;
     width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
 }
 
-/* Styles améliorés pour la modale de suppression */
-.modal-content .form-actions {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 20px;
-    gap: 10px; /* Espace entre les boutons */
-    width: 100%;
-}
-
-.modal-content .form-actions button {
-    flex: 1; /* Faire en sorte que les boutons prennent une largeur égale */
-    padding: 10px 16px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    text-align: center;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    height: 40px; /* Hauteur fixe */
-    line-height: 1;
-}
-
-#cancelDeleteBtn {
-    background-color: #95a5a6;
-    color: white;
-}
-
-#cancelDeleteBtn:hover {
-    background-color: #7f8c8d;
-    transform: scale(1.05);
-}
-
-#confirmDeleteBtn {
-    background-color: #e74c3c;
-    color: white;
-}
-
-#confirmDeleteBtn:hover {
-    background-color: #c0392b;
-    transform: scale(1.05);
-}
-
-/* Amélioration générale des formulaires dans les modales */
-.modal-content form {
-    margin-top: 15px;
-}
-
-.modal-content .form-group {
-    margin-bottom: 20px;
-}
-
-.modal-content .form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: bold;
-    color: #333;
-}
-
-.modal-content .form-group input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-    box-sizing: border-box;
-    transition: border-color 0.3s ease;
-}
-
-.modal-content .form-group input:focus {
-    border-color: #3498db;
-    outline: none;
-    box-shadow: 0 0 3px rgba(52, 152, 219, 0.5);
-}
-
-.error-message {
-    color: #e74c3c;
-    margin-top: 10px;
-    font-size: 14px;
-    text-align: center;
-}
-
-/* Meilleure apparence pour la modale */
 .modal-content {
-    background-color: #fff;
+    background-color: var(--color-background);
     margin: 10% auto;
     padding: 25px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--color-border);
     width: 400px;
     max-width: 90%;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    max-height: 90vh;
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 4px 15px var(--color-shadow);
+    overflow-y: auto;
+}
+
+#profileModal .modal-content {
+    width: 350px;
 }
 
 .modal-content h2 {
-    margin-top: 5px;
-    margin-bottom: 15px;
-    color: #333;
+    margin: 5px 0 15px;
+    color: var(--color-text);
     font-size: 22px;
     text-align: center;
     border-bottom: 1px solid #eee;
@@ -471,217 +441,275 @@ body.interacting #map {
 
 .modal-content p {
     margin-bottom: 15px;
-    color: #555;
+    color: var(--color-text-light);
     line-height: 1.5;
 }
 
+/* Bouton de fermeture des modales */
 .close {
     color: #aaa;
     float: right;
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
-    transition: color 0.3s ease;
     line-height: 0.8;
+    transition: color var(--transition-time) ease;
 }
 
 .close:hover,
 .close:focus {
-    color: #e74c3c;
+    color: var(--color-button-danger);
 }
 
-/* Style pour le bouton d'ajout de couloir */
-#addCouloirBtn {
-    padding: 6px 12px; /* Padding réduit pour être plus discret */
-    font-size: 0.8rem; /* Texte plus petit */
-    background-color: rgba(52, 152, 219, 0.7); /* Bleu plus clair et translucide */
-    border: 1px solid rgba(41, 128, 185, 0.2);
-    border-radius: 4px;
-    color: white;
-    cursor: pointer;
-    opacity: 0.8; /* Légèrement transparent */
-    transition: all 0.2s ease;
-    position: static; /* Permet au conteneur de gérer sa position */
-    z-index: 1000;
-    margin-top: 5px; /* Espace au-dessus du bouton */
-    font-weight: normal; /* Moins prononcé */
-    width: 120px; /* Largeur fixe pour tous les boutons */
-    text-align: center;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-    margin-right: 10px; /* Marge pour éviter le bord de l'écran */
-    top: auto; /* Supprimer le positionnement absolu */
+/* Styles pour les formulaires */
+.form-group {
+    margin-bottom: 15px;
+    width: 100%;
+    clear: both;
 }
 
-#addCouloirBtn:hover {
-    background-color: rgba(41, 128, 185, 0.9);
-    opacity: 1;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+#profileModal .form-group {
+    margin-bottom: 20px;
 }
 
-/* Style pour le formulaire d'ajout de couloir */
-#addCouloirModal .modal-content {
-    width: 500px;
-    max-width: 95%;
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: var(--color-text);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border-color var(--transition-time) ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: var(--color-button-primary);
+    outline: none;
+    box-shadow: 0 0 3px rgba(52, 152, 219, 0.5);
 }
 
 .form-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
-    margin-bottom: 15px;
+    width: 100%;
+    margin-bottom: 10px;
+    clear: both;
 }
 
 .form-group.half {
     flex: 1;
+    min-width: 180px;
 }
 
 textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-    box-sizing: border-box;
     resize: vertical;
     font-family: inherit;
 }
 
 select {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    background-color: white;
-    font-size: 14px;
-    height: 38px; /* Assurer une taille cohérente avec les autres inputs */
+    height: 38px;
 }
 
-.primary-btn {
-    background-color: #3498db;
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.primary-btn:hover {
-    background-color: #2980b9;
-    transform: scale(1.05);
-}
-
-/* Style pour l'affichage de l'auteur du couloir */
-.couloir-author {
-    font-size: 0.9em;
-    color: #666;
-    border-top: 1px dotted #ddd;
-    margin-top: 20px;
-    padding-top: 10px;
-    text-align: left;
-    padding-left: 5px;
-}
-
-/* Style pour les notes explicatives sous les labels */
+/* Style pour les notes sous les labels */
 .input-note {
     font-size: 0.8em;
     font-weight: normal;
-    color: #777;
+    color: var(--color-text-light);
     font-style: italic;
 }
 
-/* Styles pour le bouton d'édition */
-.edit-btn {
-    background-color: #3498db;
-    color: white;
+/* Groupe de boutons alignés */
+.uniform-buttons,
+.form-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin-top: 20px;
+    justify-content: space-between;
+    align-items: stretch;
+}
+
+/* Styles de base pour les boutons d'action */
+.action-button,
+.primary-btn,
+.edit-btn,
+.danger-btn,
+#cancelDeleteBtn,
+#confirmDeleteBtn {
+    flex: 1;
+    height: 40px;
+    padding: 0 10px;
     border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
+    border-radius: var(--border-radius-md);
     cursor: pointer;
     font-weight: bold;
-    transition: background-color 0.3s ease;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background-color var(--transition-time) ease, 
+                transform 0.2s ease;
+    position: relative;
+    z-index: calc(var(--z-panels-left) + 1); /* Au-dessus des panneaux */
+}
+
+/* Styles spécifiques pour chaque type de bouton */
+.primary-btn {
+    background-color: var(--color-button-primary);
+    color: white;
+}
+
+.primary-btn:hover {
+    background-color: var(--color-button-primary-hover);
+    transform: scale(1.05);
+}
+
+.edit-btn {
+    background-color: var(--color-button-primary);
+    color: white;
 }
 
 .edit-btn:hover {
-    background-color: #2980b9;
+    background-color: var(--color-button-primary-hover);
 }
 
-/* Style pour le groupe de boutons */
+.danger-btn {
+    background-color: var(--color-button-danger);
+    color: white;
+}
+
+.danger-btn:hover {
+    background-color: var(--color-button-danger-hover);
+    transform: scale(1.05);
+}
+
+/* Boutons spécifiques pour les actions de suppression */
+#cancelDeleteBtn {
+    background-color: var(--color-button-cancel);
+    color: white;
+}
+
+#cancelDeleteBtn:hover {
+    background-color: var(--color-button-cancel-hover);
+    transform: scale(1.05);
+}
+
+#confirmDeleteBtn {
+    background-color: var(--color-button-danger);
+    color: white;
+}
+
+#confirmDeleteBtn:hover {
+    background-color: var(--color-button-danger-hover);
+    transform: scale(1.05);
+}
+
+/* Groupe de boutons dans le panneau */
 .button-group {
     display: flex;
     gap: 10px;
     justify-content: center;
     width: 100%;
-    align-items: stretch; /* Important: assure que tous les boutons s'étirent à la même hauteur */
+    align-items: stretch;
 }
 
 .button-group button {
     flex: 1;
     min-width: 80px;
     height: 38px;
-    margin: 0; /* Supprime toute marge qui pourrait causer des décalages */
+    margin: 0;
     padding: 0 8px;
-    display: flex; /* Transforme le bouton en conteneur flex */
-    align-items: center; /* Centre verticalement le contenu */
-    justify-content: center; /* Centre horizontalement le contenu */
-    vertical-align: middle; /* Assure l'alignement vertical */
-    box-sizing: border-box; /* S'assure que padding et borders sont inclus dans la dimension */
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
-/* Correction des boutons uniformes dans les modales */
-.uniform-buttons {
-    display: flex;
-    gap: 10px;
-    justify-content: space-between;
+/* Messages d'erreur */
+.error-message {
+    color: var(--color-button-danger);
+    margin-top: 10px;
+    font-size: 12px;
+    text-align: center;
+}
+
+/* Panneau d'actions dans le panneau droit */
+.panel-actions {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid var(--color-border);
+    text-align: center;
     width: 100%;
-    align-items: stretch; /* Assure que tous les boutons s'étirent à la même hauteur */
 }
 
-.uniform-buttons button {
-    flex: 1;
-    height: 40px;
-    margin: 0;
-    padding: 0 10px;
+/* Style pour l'affichage de l'auteur du couloir */
+.couloir-author {
+    font-size: 0.9em;
+    color: var(--color-text-light);
+    border-top: 1px dotted var(--color-border);
+    margin-top: 20px;
+    padding-top: 10px;
+    text-align: left;
+    padding-left: 5px;
+}
+
+/* Style pour le commentaire de danger */
+.danger-comment {
+    font-size: 0.9em;
+    color: var(--color-text-light);
+    margin-top: -10px;
+    margin-bottom: 15px;
+    padding-left: 5px;
+    text-align: left;
+}
+
+/* Correction pour l'alignement des champs d'altitude */
+.form-row.altitude-row {
+    align-items: flex-end;
+}
+
+.form-group.half-with-note {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    text-align: center;
-    line-height: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    flex-direction: column;
 }
 
-/* Réinitialiser les marges et paddings qui pourraient interférer */
-.action-button, .edit-btn, .primary-btn, .danger-btn, #cancelDeleteBtn, #confirmDeleteBtn {
-    margin: 0;
-    box-sizing: border-box;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    font-size: 14px;
+.form-group.half-with-note label {
+    margin-bottom: 0;
 }
 
-/* Style pour le système de notifications */
+.form-group.half-with-note .input-note {
+    margin-bottom: 8px;
+}
+
+/* Système de notifications */
 .notification {
     position: fixed;
     top: 70px;
     right: 15px;
     padding: 15px 20px;
-    border-radius: 8px;
+    border-radius: var(--border-radius-lg);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    z-index: 9999;
+    z-index: var(--z-notification);
     max-width: 350px;
     opacity: 1;
     transition: opacity 0.5s ease;
+}
+
+.notification p {
+    margin: 0;
+    font-size: 14px;
 }
 
 .notification.success {
@@ -702,135 +730,275 @@ select {
     border-left: 4px solid #dc3545;
 }
 
-.notification p {
-    margin: 0;
-    font-size: 14px;
-}
-
 .notification.fadeOut {
     opacity: 0;
 }
 
-/* Amélioration du style des forms pour résoudre le problème d'affichage */
-#addCouloirModal .form-group,
-#editCouloirModal .form-group {
-    clear: both;
-    width: 100%;
-    margin-bottom: 15px;
+/* Masquer les éléments qui nécessitent une authentification */
+.auth-required {
+    display: none;
 }
 
-/* Correction des problèmes avec les formulaires */
-.modal-content .form-row {
+/* S'assurer que les régions et marqueurs sont au bon niveau dans la pile */
+.leaflet-overlay-pane {
+    z-index: var(--z-regions);
+}
+
+/* S'assurer que les popups apparaissent correctement */
+.leaflet-popup {
+    z-index: var(--z-panels-left); /* Même niveau que le panneau gauche */
+}
+
+/* Assurez-vous que tous les contrôles de carte sont au-dessus du bandeau */
+.leaflet-control {
+    z-index: var(--z-controls) !important;
+}
+
+/* Ajustez légèrement le contenu du bandeau pour qu'il s'adapte à la hauteur réduite */
+#bulletinValidity, #nextEmission {
+    display: inline-block;
+    vertical-align: middle;
+    line-height: normal;
+}
+
+/* Styles pour la modale de profil */
+#profileModal .modal-content {
+    width: 350px;
+}
+
+.tab-container {
     display: flex;
-    flex-wrap: wrap; /* Allow wrapping on small screens */
-    gap: 10px;
-    width: 100%;
-    margin-bottom: 10px;
-    clear: both;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--color-border);
 }
 
-.modal-content .form-group.half {
+.tab {
+    padding: 10px 15px;
+    cursor: pointer;
+    background-color: transparent;
+    border: none;
     flex: 1;
-    min-width: 180px; /* Ensure minimum width */
-}
-
-.modal-content .form-group {
-    margin-bottom: 15px;
-    width: 100%;
-    clear: both;
-}
-
-/* Assurer que les champs sont bien dimensionnés */
-.modal-content input,
-.modal-content select,
-.modal-content textarea {
-    width: 100%;
-    box-sizing: border-box;
-}
-
-/* Style pour le commentaire de danger dans le panneau droit */
-.danger-comment {
-    font-size: 0.9em;
-    color: #666;
-    margin-top: -10px;
-    margin-bottom: 15px;
-    padding-left: 5px;
-    text-align: left;
-}
-
-/* Corrections pour l'alignement vertical des champs d'altitude */
-.form-row.altitude-row {
-    align-items: flex-end; /* Aligner le bas des éléments */
-}
-
-.form-group.half-with-note {
-    display: flex;
-    flex-direction: column;
-}
-
-.form-group.half-with-note label {
-    margin-bottom: 0;
-}
-
-.form-group.half-with-note .input-note {
-    margin-bottom: 8px;
-}
-
-.form-group.half-with-note input,
-.form-group.half input {
-    height: 38px; /* Hauteur fixe pour tous les inputs */
-    box-sizing: border-box;
-}
-
-/* Style pour assurer l'uniformité des boutons */
-.uniform-buttons {
-    display: flex;
-    gap: 10px;
-    justify-content: space-between;
-    width: 100%;
-    align-items: stretch; /* Assure que tous les boutons s'étirent à la même hauteur */
-}
-
-.uniform-buttons button {
-    flex: 1;
-    height: 40px; /* Hauteur fixe pour tous les boutons */
-    display: flex;
-    align-items: center;
-    justify-content: center;
     text-align: center;
-    line-height: 1.2;
-    padding: 0 10px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+    font-weight: bold;
+    color: var(--color-text-light);
 }
 
-/* Ajustement pour les boutons de suppression */
-#confirmDeleteBtn, #cancelDeleteBtn {
+.tab.active {
+    color: var(--color-button-primary);
+    border-bottom: 3px solid var(--color-button-primary);
+}
+
+.tab:hover:not(.active) {
+    background-color: var(--color-hover);
+    color: var(--color-text);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.save-success-message {
+    color: #28a745;
+    margin-top: 5px;
+    font-size: 14px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.save-success-message.visible {
+    opacity: 1;
+}
+
+/* Styles pour le menu utilisateur déroulant */
+.user-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+/* Ajustements pour le menu déroulant */
+
+/* Positionnement et style du dropdown */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0; /* Aligné parfaitement avec le bord droit du bouton */
+    top: calc(100% + 1px); /* Positionner juste en-dessous du bouton */
+    background-color: var(--color-background-light);
+    min-width: 200px;
+    box-shadow: 0 4px 8px var(--color-shadow);
+    border-radius: var(--border-radius-md);
+    z-index: var(--z-buttons);
+    margin-top: 0; /* Suppression de la marge */
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-top: none; /* Supprimer la bordure en haut pour une transition fluide */
+}
+
+.dropdown-content.show {
+    display: block;
+    animation: fadeIn 0.2s ease;
+}
+
+/* Options du menu déroulant - augmentation de l'espacement */
+.dropdown-content a {
+    color: var(--color-text);
+    padding: 8px 14px 8px 12px; /* Légère augmentation du padding gauche */
+    text-decoration: none;
     display: flex;
     align-items: center;
+    gap: 3px; /* Augmentation légère de l'espace entre l'icône et le texte */
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+    font-size: 0.7rem;
+}
+
+.dropdown-content a:hover {
+    background-color: var(--color-hover);
+}
+
+.dropdown-content a:active {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Icônes dans le menu déroulant */
+.dropdown-content a::before {
+    content: "";
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.7;
+    margin-right: 3px; /* Augmentation de la marge entre l'icône et le texte */
+    flex-shrink: 0; /* Empêche l'icône de rétrécir */
+}
+
+.dropdown-content a.edit-username::before {
+    background-image: url('/img/edit-user.png');
+    opacity: 0.9;
+
+}
+
+.dropdown-content a.change-password::before {
+    background-image: url('/img/password.png');
+    opacity: 0.9;
+
+}
+
+.dropdown-content a.logout::before {
+    background-image: url('/img/logout.png');
+    opacity: 0.9;
+}
+
+.dropdown-content a.logout {
+    color: var(--color-button-danger-hover);
+    font-weight: bold;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.dropdown-divider {
+    height: 1px;
+    background-color: var(--color-border);
+    margin: 0;
+}
+
+/* Ajustement du bouton user pour une connexion visuelle au menu déroulant */
+#userStatus.dropdown-open {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+    background-color: rgba(255, 255, 255, 0.85); /* Plus opaque quand ouvert */
+}
+
+/* Styles pour la rose des vents */
+.windrose-container {
+    display: flex;
     justify-content: center;
-    min-height: 40px;
-    flex-basis: 0;
-    flex-grow: 1;
+    margin: 15px 0;
 }
 
-/* Style commun pour tous les boutons d'action */
-.action-button {
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    font-size: 14px;
+.windrose-svg {
+    width: 200px;
+    height: 200px;
+    max-width: 100%;
 }
 
-/* Application du style commun */
-.edit-btn, .primary-btn, .danger-btn, #cancelDeleteBtn {
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+/* Styles pour les secteurs de la rose des vents */
+.windrose-sector {
+    transition: fill 0.3s ease;
+    cursor: help;
+}
+
+.windrose-sector:hover {
+    opacity: 0.8;
+}
+
+.windrose-sector.active {
+    fill: var(--windrose-active);
+}
+
+windrose-sector.inactive {
+    fill: var(--windrose-inactive);
+    stroke: var(--windrose-stroke);
+    stroke-width: 1;
+}
+
+.windrose-label {
+    font-family: Arial, sans-serif;
+    font-size: 24px;
     font-weight: bold;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    font-size: 14px;
+    pointer-events: none;
+}
+
+/* Légende de la rose des vents */
+.windrose-legend {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 10px;
+    font-size: 0.9em;
+}
+
+.windrose-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.windrose-legend-color {
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--windrose-stroke);
+}
+
+.windrose-legend-active {
+    background-color: var(--windrose-active);
+}
+
+.windrose-legend-inactive {
+    background-color: var(--windrose-inactive);
+}
+
+/* Titre pour la rose des vents */
+.windrose-title {
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: var(--color-text);
 }

@@ -675,3 +675,342 @@ async function resetDatabaseCompletely() {
 // Exposer les fonctions globalement
 window.resetDatabase = resetDatabase;
 window.resetDatabaseCompletely = resetDatabaseCompletely;
+
+// Fonctions d'authentification pour la base de données
+const dbAuth = (function() {
+    // Fonction pour vérifier les identifiants d'un utilisateur
+    async function verifyUserCredentials(username, passwordHash) {
+        try {
+            const db = await openDatabase();
+            const tx = db.transaction(USER_STORE_NAME, "readonly");
+            const store = tx.objectStore(USER_STORE_NAME);
+            
+            return new Promise((resolve, reject) => {
+                const request = store.get(username);
+                
+                request.onsuccess = function(event) {
+                    const user = event.target.result;
+                    if (user && user.passwordHash === passwordHash) {
+                        console.log(`Utilisateur ${username} authentifié avec succès`);
+                        resolve(user);
+                    } else {
+                        console.log(`Authentification échouée pour ${username}`);
+                        resolve(null);
+                    }
+                };
+                
+                request.onerror = function(event) {
+                    console.error(`Erreur lors de la vérification des identifiants pour ${username}:`, event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        } catch (error) {
+            console.error(`Erreur lors de la vérification des identifiants pour ${username}:`, error);
+            return null;
+        }
+    }
+
+    // Fonction pour hacher un mot de passe
+    function hashPassword(password) {
+        if (typeof CryptoJS !== 'undefined') {
+            return CryptoJS.SHA256(password).toString();
+        } else {
+            console.warn("CryptoJS n'est pas disponible, impossible de hacher le mot de passe");
+            return password; // Fallback non sécurisé
+        }
+    }
+
+    /**
+     * Mettre à jour le nom d'utilisateur dans la base de données
+     * @param {string} currentUsername - Nom d'utilisateur actuel
+     * @param {string} newUsername - Nouveau nom d'utilisateur
+     * @returns {Promise<boolean>} - Indique si la mise à jour a réussi
+     */
+    async function updateUsername(currentUsername, newUsername) {
+        return new Promise((resolve, reject) => {
+            try {
+                const db = window.indexedDB.open(DB_NAME, DB_VERSION);
+                
+                db.onsuccess = function(event) {
+                    const database = event.target.result;
+                    const transaction = database.transaction(['users'], 'readwrite');
+                    const usersStore = transaction.objectStore('users');
+                    
+                    // Vérifier que le nouveau nom d'utilisateur n'existe pas déjà
+                    const checkRequest = usersStore.get(newUsername);
+                    
+                    checkRequest.onsuccess = function() {
+                        if (checkRequest.result !== undefined) {
+                            // Le nom d'utilisateur existe déjà
+                            console.warn("Nom d'utilisateur déjà utilisé:", newUsername);
+                            resolve(false);
+                            return;
+                        }
+                        
+                        // Récupérer l'utilisateur actuel
+                        const getUserRequest = usersStore.get(currentUsername);
+                        
+                        getUserRequest.onsuccess = function() {
+                            if (!getUserRequest.result) {
+                                console.error("Utilisateur non trouvé:", currentUsername);
+                                resolve(false);
+                                return;
+                            }
+                            
+                            const userData = getUserRequest.result;
+                            
+                            // Supprimer l'ancienne entrée
+                            const deleteRequest = usersStore.delete(currentUsername);
+                            
+                            deleteRequest.onsuccess = function() {
+                                // Créer la nouvelle entrée avec le nouveau nom d'utilisateur
+                                userData.username = newUsername;
+                                const addRequest = usersStore.add(userData);
+                                
+                                addRequest.onsuccess = function() {
+                                    console.log("Nom d'utilisateur mis à jour avec succès:", newUsername);
+                                    
+                                    // Mettre à jour les références de cet utilisateur dans la collection couloirs
+                                    updateCouloirsUserReference(currentUsername, newUsername)
+                                        .then(() => {
+                                            console.log("Références utilisateur mises à jour dans les couloirs");
+                                            resolve(true);
+                                        })
+                                        .catch(error => {
+                                            console.error("Erreur lors de la mise à jour des références couloirs:", error);
+                                            // On retourne quand même true car le changement principal a réussi
+                                            resolve(true);
+                                        });
+                                };
+                                
+                                addRequest.onerror = function(e) {
+                                    console.error("Erreur lors de l'ajout du nouvel utilisateur:", e);
+                                    resolve(false);
+                                };
+                            };
+                            
+                            deleteRequest.onerror = function(e) {
+                                console.error("Erreur lors de la suppression de l'ancien utilisateur:", e);
+                                resolve(false);
+                            };
+                        };
+                        
+                        getUserRequest.onerror = function(e) {
+                            console.error("Erreur lors de la récupération de l'utilisateur:", e);
+                            resolve(false);
+                        };
+                    };
+                    
+                    checkRequest.onerror = function(e) {
+                        console.error("Erreur lors de la vérification du nom d'utilisateur:", e);
+                        resolve(false);
+                    };
+                };
+                
+                db.onerror = function(event) {
+                    reject(new Error("Erreur d'accès à la base de données"));
+                };
+                
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    
+    /**
+     * Mettre à jour le mot de passe d'un utilisateur
+     * @param {string} username - Nom d'utilisateur
+     * @param {string} newHashedPassword - Nouveau mot de passe haché
+     * @returns {Promise<boolean>} - Indique si la mise à jour a réussi
+     */
+    async function updatePassword(username, newHashedPassword) {
+        return new Promise((resolve, reject) => {
+            try {
+                const db = window.indexedDB.open(DB_NAME, DB_VERSION);
+                
+                db.onsuccess = function(event) {
+                    const database = event.target.result;
+                    const transaction = database.transaction(['users'], 'readwrite');
+                    const usersStore = transaction.objectStore('users');
+                    
+                    // Récupérer l'utilisateur
+                    const getUserRequest = usersStore.get(username);
+                    
+                    getUserRequest.onsuccess = function() {
+                        if (!getUserRequest.result) {
+                            console.error("Utilisateur non trouvé:", username);
+                            resolve(false);
+                            return;
+                        }
+                        
+                        const userData = getUserRequest.result;
+                        
+                        // Mettre à jour le mot de passe
+                        userData.passwordHash = newHashedPassword;
+                        
+                        // Sauvegarder les modifications
+                        const updateRequest = usersStore.put(userData);
+                        
+                        updateRequest.onsuccess = function() {
+                            console.log("Mot de passe mis à jour avec succès pour:", username);
+                            resolve(true);
+                        };
+                        
+                        updateRequest.onerror = function(e) {
+                            console.error("Erreur lors de la mise à jour du mot de passe:", e);
+                            resolve(false);
+                        };
+                    };
+                    
+                    getUserRequest.onerror = function(e) {
+                        console.error("Erreur lors de la récupération de l'utilisateur:", e);
+                        resolve(false);
+                    };
+                };
+                
+                db.onerror = function(event) {
+                    reject(new Error("Erreur d'accès à la base de données"));
+                };
+                
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    
+    /**
+     * Récupérer le hash du mot de passe d'un utilisateur
+     * @param {string} username - Nom d'utilisateur
+     * @returns {Promise<string|null>} - Hash du mot de passe ou null si non trouvé
+     */
+    async function getUserPasswordHash(username) {
+        return new Promise((resolve, reject) => {
+            try {
+                const db = window.indexedDB.open(DB_NAME, DB_VERSION);
+                
+                db.onsuccess = function(event) {
+                    const database = event.target.result;
+                    const transaction = database.transaction(['users'], 'readonly');
+                    const usersStore = transaction.objectStore('users');
+                    
+                    // Récupérer l'utilisateur
+                    const getUserRequest = usersStore.get(username);
+                    
+                    getUserRequest.onsuccess = function() {
+                        if (!getUserRequest.result) {
+                            console.warn("Utilisateur non trouvé pour récupération du hash:", username);
+                            resolve(null);
+                            return;
+                        }
+                        
+                        resolve(getUserRequest.result.passwordHash);
+                    };
+                    
+                    getUserRequest.onerror = function(e) {
+                        console.error("Erreur lors de la récupération de l'utilisateur:", e);
+                        resolve(null);
+                    };
+                };
+                
+                db.onerror = function(event) {
+                    reject(new Error("Erreur d'accès à la base de données"));
+                };
+                
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    
+    /**
+     * Mettre à jour les références utilisateur dans les couloirs
+     * @param {string} oldUsername - Ancien nom d'utilisateur
+     * @param {string} newUsername - Nouveau nom d'utilisateur
+     * @returns {Promise<boolean>} - Indique si la mise à jour a réussi
+     */
+    async function updateCouloirsUserReference(oldUsername, newUsername) {
+        return new Promise((resolve, reject) => {
+            try {
+                const db = window.indexedDB.open(DB_NAME, DB_VERSION);
+                
+                db.onsuccess = function(event) {
+                    const database = event.target.result;
+                    const transaction = database.transaction(['couloirs'], 'readwrite');
+                    const couloirsStore = transaction.objectStore('couloirs');
+                    
+                    const getAllRequest = couloirsStore.getAll();
+                    
+                    getAllRequest.onsuccess = function() {
+                        const couloirs = getAllRequest.result;
+                        let updateCount = 0;
+                        let processedCount = 0;
+                        
+                        if (couloirs.length === 0) {
+                            resolve(true);
+                            return;
+                        }
+                        
+                        // Parcourir tous les couloirs pour mettre à jour les références
+                        couloirs.forEach(couloir => {
+                            if (couloir.user === oldUsername) {
+                                couloir.user = newUsername;
+                                
+                                const updateRequest = couloirsStore.put(couloir);
+                                
+                                updateRequest.onsuccess = function() {
+                                    updateCount++;
+                                    processedCount++;
+                                    
+                                    if (processedCount === couloirs.length) {
+                                        console.log(`Mise à jour terminée: ${updateCount} couloirs modifiés`);
+                                        resolve(true);
+                                    }
+                                };
+                                
+                                updateRequest.onerror = function() {
+                                    processedCount++;
+                                    
+                                    if (processedCount === couloirs.length) {
+                                        console.log(`Mise à jour terminée: ${updateCount} couloirs modifiés`);
+                                        resolve(true);
+                                    }
+                                };
+                            } else {
+                                processedCount++;
+                                
+                                if (processedCount === couloirs.length) {
+                                    console.log(`Mise à jour terminée: ${updateCount} couloirs modifiés`);
+                                    resolve(true);
+                                }
+                            }
+                        });
+                    };
+                    
+                    getAllRequest.onerror = function(e) {
+                        console.error("Erreur lors de la récupération des couloirs:", e);
+                        resolve(false);
+                    };
+                };
+                
+                db.onerror = function(event) {
+                    reject(new Error("Erreur d'accès à la base de données"));
+                };
+                
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    
+    // Ajouter les nouvelles fonctions à l'API publique
+    return {
+        verifyUserCredentials,
+        hashPassword,
+        updateUsername,
+        updatePassword,
+        getUserPasswordHash
+    };
+})();
+
+// Exposer le module d'authentification globalement
+window.dbAuth = dbAuth;

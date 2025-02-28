@@ -14,13 +14,14 @@
 <body>
     <!-- Bandeau d'information -->
     <div id="infoBanner">
-        <strong>Validité du Bulletin :</strong> <span id="bulletinValidity">Chargement...</span> |
+        <strong>Émission du Bulletin :</strong> <span id="bulletinValidity">Chargement...</span> |
         <strong>Prochaine émission :</strong> <span id="nextEmission">Chargement...</span>
     </div>
 
     <!-- Conteneur pour les boutons de connexion/ajout avec ordre réorganisé - Suppression du bouton logout redondant -->
     <div id="loginContainer">
-        <div id="userStatus" class="auth-required"></div>
+        <!-- Ajouter une classe "user-menu" pour le statut utilisateur -->
+        <div id="userStatus" class="auth-required user-menu"></div>
         <button id="loginBtn" class="auth-toggle">Connexion</button>
         <button id="addCouloirBtn" class="auth-required">+ Ajouter un couloir</button>
     </div>
@@ -264,6 +265,56 @@
                 </div>
                 <div id="editCouloirError" class="error-message"></div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal de profil utilisateur -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Profil utilisateur</h2>
+            
+            <!-- Onglets pour navigation -->
+            <div class="tab-container">
+                <button class="tab active" data-tab="infoTab">Informations</button>
+                <button class="tab" data-tab="passwordTab">Mot de passe</button>
+            </div>
+            
+            <!-- Onglet Informations -->
+            <div id="infoTab" class="tab-content active">
+                <form id="userInfoForm">
+                    <div class="form-group">
+                        <label for="editUsername">Nom d'utilisateur:</label>
+                        <input type="text" id="editUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="primary-btn action-button">Enregistrer</button>
+                    </div>
+                    <div id="infoUpdateMessage" class="save-success-message"></div>
+                </form>
+            </div>
+            
+            <!-- Onglet Mot de passe -->
+            <div id="passwordTab" class="tab-content">
+                <form id="passwordForm">
+                    <div class="form-group">
+                        <label for="currentPassword">Mot de passe actuel:</label>
+                        <input type="password" id="currentPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">Nouveau mot de passe:</label>
+                        <input type="password" id="newPassword" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirmez le mot de passe:</label>
+                        <input type="password" id="confirmPassword" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="primary-btn action-button">Modifier</button>
+                    </div>
+                    <div id="passwordUpdateMessage" class="save-success-message"></div>
+                </form>
+            </div>
         </div>
     </div>
 
